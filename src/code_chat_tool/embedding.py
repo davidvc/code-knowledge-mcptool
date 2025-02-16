@@ -94,7 +94,26 @@ class OllamaEmbedder:
             
             # Prepare batch texts
             for segment in batch:
-                context = f"File: {segment.path}\n\nContent:\n{segment.content}"
+                file_name = os.path.basename(segment.path)
+                file_type = os.path.splitext(file_name)[1].lower()
+                
+                # Build enhanced context with metadata
+                context_parts = [
+                    f"File: {file_name}",
+                    f"Type: {file_type}",
+                ]
+                
+                # Add Java-specific information if available
+                if segment.name:
+                    context_parts.append(f"Name: {segment.name}")
+                if segment.doc_text:
+                    context_parts.append(f"Documentation:\n{segment.doc_text}")
+                
+                # Add the full content
+                context_parts.append(f"Content:\n{segment.content}")
+                
+                # Join all parts with double newlines for clear separation
+                context = "\n\n".join(context_parts)
                 batch_texts.append(context)
             
             # Get embeddings for batch

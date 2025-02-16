@@ -1,42 +1,50 @@
 # Active Context
 
 ## Current Focus
-Optimizing embedding generation performance for the Chat with Code Repository Tool.
+Implementing semantic code search with the following priorities:
 
-## Recent Decisions
-1. **Language Choice**: Python selected due to its robust ecosystem for ML/NLP tasks, rapid prototyping capabilities, and ease of integrating with embedding tools.
-2. **Architecture Decisions**:
-   - Local-only operation for simplicity and security.
-   - Switching from Ollama to sentence-transformers for embeddings due to performance concerns.
-   - Abstracted vector storage interface with both transient and persistent implementations.
-   - MCP tool integration for Cline compatibility.
-3. **Testing Strategy**:
-   - Integration testing using real-world codebases:
-     - Flask for Python capabilities.
-     - Commons Lang for Java capabilities (current focus).
-   - Use of an abstract evaluator interface for response quality assessment via LLMs.
-4. **Performance Optimizations**:
-   - Implemented batched embedding generation.
-   - Switching to sentence-transformers which is:
-     - Specifically designed for embeddings
-     - Much faster than general-purpose models
-     - Memory efficient
-     - Supports efficient batching
-     - Uses compact models (~100MB)
+1. Two-Phase Processing
+   - LLM-based semantic analysis
+   - Embedding of semantic summaries
+   - Integration with existing search infrastructure
 
-## In Progress
-- Implementing sentence-transformers based embedding.
-- Optimizing embedding generation performance.
-- Testing with large repositories.
+2. Rate Limiting Implementation
+   - Sliding window rate limiting
+   - Exponential backoff
+   - Batch processing with checkpoints
+
+3. Model Abstraction
+   - Support for both cloud and local models
+   - Preparation for proprietary code handling
+
+## Recent Changes
+- Identified limitations with current text-based embedding approach
+- Designed new two-phase processing architecture
+- Planned rate limiting and model abstraction implementation
 
 ## Next Steps
-1. Complete sentence-transformers integration.
-2. Test performance improvements.
-3. Implement persistent storage for embeddings.
-4. Add query handling and response generation.
-5. Add support for incremental updates.
+1. Implement CodeAnalyzer base class and initial OpenAI implementation
+2. Build rate limiting infrastructure with sliding window
+3. Create batch processing system with checkpointing
+4. Update embedding system to work with semantic summaries
+5. Add configuration system for model and processing parameters
 
-## Future Plans
-- **Multi-Repository Support**: Expand the system to handle multiple repositories by assigning unique collections based on each repository's folder name; enforce uniqueness and detect duplicates.
-- **Incremental Indexing**: Create mechanisms to update an existing repository index without fully rebuilding it, making the indexing process more efficient when only small changes occur.
-- **Caching**: Add caching mechanisms to further improve performance.
+## Active Decisions
+1. Using two-phase approach for better semantic understanding
+2. Implementing robust rate limiting for API sustainability
+3. Designing for future support of proprietary code and local models
+
+## Current Challenges
+1. Rate limits on API calls
+2. Handling proprietary code securely
+3. Maintaining progress on large codebases
+4. Balancing processing speed with API constraints
+
+## Implementation Progress
+- [x] Initial design of architecture
+- [x] Documentation of system patterns
+- [ ] CodeAnalyzer implementation
+- [ ] Rate limiting system
+- [ ] Batch processing with checkpoints
+- [ ] Configuration system
+- [ ] Integration with existing search

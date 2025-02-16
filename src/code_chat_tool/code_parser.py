@@ -7,10 +7,39 @@ This module provides functionality to parse a local repository and extract code 
 import os
 from dataclasses import dataclass
 
+def extract_java_info(content: str) -> tuple[str, str]:
+    """Extract class name and documentation from Java file content."""
+    lines = content.split('\n')
+    doc_lines = []
+    class_name = ""
+    
+    # Collect documentation and find class name
+    for line in lines:
+        line = line.strip()
+        # Skip empty lines and package declarations
+        if not line or line.startswith('package '):
+            continue
+        # Collect documentation comments
+        if line.startswith('/*') or line.startswith('*') or line.startswith('*/'):
+            doc_lines.append(line)
+        # Look for class declaration
+        elif 'class ' in line or 'interface ' in line:
+            parts = line.split(' ')
+            for i, part in enumerate(parts):
+                if part in ('class', 'interface') and i + 1 < len(parts):
+                    class_name = parts[i + 1].split('{')[0].strip()
+                    break
+            break
+        
+    doc_text = '\n'.join(doc_lines)
+    return class_name, doc_text
+
 @dataclass
 class CodeSegment:
     path: str
     content: str
+    name: str = ""      # Class/interface name
+    doc_text: str = ""  # Documentation text
 
 def parse_repository(repo_path):
     """
@@ -31,11 +60,19 @@ def parse_repository(repo_path):
         for file in files:
             ext = os.path.splitext(file)[1].lower()
             if ext in allowed_extensions:
+                name = ""
+                doc_text = ""
                 full_path = os.path.join(root, file)
+                
                 try:
                     with open(full_path, 'r', encoding='utf-8') as f:
                         content = f.read()
-                    code_files.append(CodeSegment(path=full_path, content=content))
+                    
+                    # Extract additional info for Java files
+                    if ext == '.java':
+                        name, doc_text = extract_java_info(content)
+                    
+                    code_files.append(CodeSegment(path=full_path, content=content, name=name, doc_text=doc_text))
                 except Exception as e:
                     # If a file cannot be read, skip it.
                     pass
