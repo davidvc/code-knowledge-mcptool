@@ -1,102 +1,159 @@
 # System Patterns
 
-## Code Analysis Architecture
+## Memory Bank Architecture
 
-### Two-Phase Code Understanding
-The system uses a two-phase approach for code understanding:
+### Unified Knowledge System
+The memory bank combines two complementary storage approaches:
 
-1. Semantic Analysis Phase
-   - Code is analyzed by an LLM to generate semantic summaries
-   - Captures actual functionality and purpose rather than just text
-   - Abstracts implementation details into high-level understanding
+1. Vector Database (In Project)
+   - File and directory summaries
+   - Component relationships
+   - Implementation patterns
+   - Supports updates and evolution
+   - Version control optional
 
-2. Embedding Phase
-   - Semantic summaries are embedded for similarity search
-   - File paths preserved as metadata
-   - Enables semantic-based code search
-
-### Model Abstraction Layer
-```python
-class CodeAnalyzer:
-    """Abstract base class for code analysis"""
-    def analyze_code(self, code: str, file_path: str) -> str:
-        """Generate semantic summary of code"""
-        raise NotImplementedError
-```
-
-- Flexible model selection through abstraction
-- Supports both cloud and local models
-- Enables future switch to proprietary models for sensitive code
-
-### Rate Limiting Strategy
-The system implements robust rate limiting for API calls:
-
-1. Sliding Window Rate Limiting
-   - Tracks requests within a time window
-   - Prevents exceeding API rate limits
-   - Configurable window size and request limits
-
-2. Exponential Backoff
-   - Handles rate limit errors gracefully
-   - Increases wait time between retries
-   - Maximum retry attempts configurable
-
-3. Batch Processing
-   - Checkpointing for interrupted runs
+2. Markdown Documentation
+   - Project briefs
+   - Active context
+   - System patterns
    - Progress tracking
-   - Error collection and reporting
+   - Stored in filesystem
 
-### Configuration System
-```python
-config = {
-    "rate_limit": {
-        "requests_per_minute": 20,
-        "max_retries": 3,
-        "backoff_base": 2
-    },
-    "batch": {
-        "checkpoint_interval": 10,
-        "checkpoint_file": "analysis_checkpoint.json"
-    },
-    "model": {
-        "type": "openai",  # or "local"
-        "parameters": {
-            "temperature": 0.3,
-            "max_tokens": 500
-        }
-    }
-}
+### Knowledge Management
+
+#### Dynamic Updates
+- Knowledge can be updated when:
+  * Code semantics change
+  * New understanding is gained
+  * User requests re-evaluation
+  * Implementation patterns evolve
+- Updates preserve knowledge history
+- Maintains consistency across related entries
+
+#### RAG-Based Context Retrieval
+- Contextual information fetched as needed
+- Relevant documentation pulled for specific tasks
+- Reduces context token usage
+- More efficient API utilization
+- Supports focused understanding
+
+### Storage Structure
+```
+project-root/
+  ├── memory-bank/
+  │   ├── markdown/        # Documentation
+  │   │   ├── projectbrief.md
+  │   │   ├── activeContext.md
+  │   │   └── ...
+  │   └── knowledge/      # Vector store
+  │       ├── embeddings.npy
+  │       ├── metadata.json
+  │       └── segments.json
 ```
 
-- Configuration-driven behavior
-- Easy switching between models
-- Adjustable processing parameters
+### MCP Tool Interface
 
-## Code Search Patterns
+#### Knowledge Operations
+1. Addition
+   ```python
+   add_knowledge(path: str, summary: str, metadata: dict)
+   ```
 
-### Semantic Search
-- Based on code meaning rather than text similarity
-- Leverages LLM understanding of code structure
-- More accurate results for functional queries
+2. Update
+   ```python
+   update_knowledge(path: str, new_summary: str, metadata: dict)
+   ```
 
-### Metadata Integration
-- File paths preserved with semantic summaries
-- Enables filtering and organization
-- Maintains project structure context
+3. Search
+   ```python
+   search_knowledge(query: str) -> List[KnowledgeEntry]
+   ```
 
-## Implementation Considerations
+4. Context Retrieval
+   ```python
+   get_relevant_context(task: str) -> List[ContextEntry]
+   ```
 
-### Security
-- Model abstraction supports local processing for sensitive code
-- No proprietary code sent to cloud services when needed
-- Configurable security boundaries
+### Cline/RooCode Integration
 
-### Scalability
-- Rate limiting ensures stable processing
-- Checkpointing enables handling large codebases
-- Batch processing with resume capability
+#### Specialized Instructions
+- Stored in .clinerules or configuration
+- Guides knowledge building and updates
+- Defines when to re-evaluate
+- Sets context retrieval patterns
 
-### Extensibility
-- Abstract interfaces for key components
-- Easy addition of new model implementations
-- Configurable processing pipeline
+Example Prompt:
+```
+As you explore code:
+1. Generate concise summaries focusing on:
+   - Component purpose
+   - Key functionality
+   - Important patterns
+   - Critical relationships
+
+2. Update knowledge when you:
+   - Discover new patterns
+   - Find changed semantics
+   - Receive user requests
+   - Learn new relationships
+
+3. Use RAG for context:
+   - Pull relevant documentation
+   - Focus on task-specific needs
+   - Maintain efficiency
+```
+
+## Usage Patterns
+
+### Knowledge Building
+1. Code Exploration
+   - Generate summaries
+   - Store understanding
+   - Track relationships
+
+2. Knowledge Updates
+   - Monitor semantic changes
+   - Handle user requests
+   - Maintain consistency
+   - Preserve history
+
+3. Context Management
+   - RAG-based retrieval
+   - Task-specific focus
+   - Efficient token usage
+
+### Benefits
+1. Dynamic Knowledge
+   - Updateable understanding
+   - Evolution support
+   - Consistency maintenance
+
+2. Efficient Context
+   - RAG-based retrieval
+   - Focused information
+   - Reduced token usage
+
+3. Team Support
+   - Shared understanding
+   - Knowledge evolution
+   - Collaborative learning
+
+## Implementation Strategy
+
+### Knowledge Format
+1. Summaries
+   - Concise descriptions
+   - Key functionality
+   - Important patterns
+   - Critical relationships
+
+2. Metadata
+   - Last updated
+   - Update reason
+   - Related entries
+   - Version information
+
+3. Context Links
+   - Related documentation
+   - Connected components
+   - Usage patterns
