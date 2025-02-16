@@ -1,130 +1,220 @@
-"""Vector storage abstraction and implementations."""
+"""
+Vector Store Module for Chat with Code Repository Tool
+
+This module defines the base VectorStore interface and provides an in-memory transient implementation.
+"""
+
+import os
+import json
+import pickle
 from abc import ABC, abstractmethod
-from typing import List, TypeVar, Generic
-from .embedding import Embedding  # Add import for Embedding type
+import numpy as np
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Tuple, Optional
 
-# Type variables for flexibility
-E = TypeVar('E')  # Embedding type
-R = TypeVar('R')  # Result type
+@dataclass
+class SearchResult:
+    """Result from a vector store search."""
+    segment: 'CodeSegment'  # Forward reference
+    score: float
 
-class VectorStore(ABC, Generic[E, R]):
-    """Abstract base class for vector storage implementations."""
-    
+class VectorStore(ABC):
     @abstractmethod
-    def store(self, embeddings: List[E]) -> None:
-        """Store embeddings in the vector database.
+    def store(self, embeddings: List[Tuple[np.ndarray, 'CodeSegment']]) -> None:
+        """
+        Store a list of embeddings with their associated code segments.
         
         Args:
-            embeddings: List of embeddings to store
+            embeddings: List of tuples containing (embedding vector, code segment)
         """
         pass
-    
+
     @abstractmethod
-    def search(self, query: E) -> List[R]:
-        """Search for similar embeddings.
+    def search(self, query: np.ndarray, top_k: int = 5) -> List[SearchResult]:
+        """
+        Search for embeddings similar to the query.
         
         Args:
-            query: Query embedding
+            query: Query embedding vector
+            top_k: Number of results to return
             
         Returns:
-            List of results ordered by similarity
+            List of SearchResult objects sorted by similarity score
         """
         pass
-    
+
     @abstractmethod
     def cleanup(self) -> None:
-        """Clean up any resources used by the store."""
+        """Clean up the stored embeddings."""
         pass
 
-class TransientVectorStore(VectorStore[Embedding, Embedding]):
-    """Temporary in-memory vector store implementation using Chroma."""
-    
+class TransientVectorStore(VectorStore):
     def __init__(self):
-        """Initialize temporary vector store."""
-        import chromadb
-        import tempfile
-        import atexit
-        
-        # Create temporary directory for Chroma
-        self._temp_dir = tempfile.mkdtemp(prefix="code_chat_")
-        
-        # Initialize Chroma client with temporary persistence and reset enabled
-        self._client = chromadb.PersistentClient(
-            path=self._temp_dir,
-            settings=chromadb.Settings(allow_reset=True)
-        )
-        self._collection = self._client.create_collection(name="code_segments")
-        
-        # Register cleanup on exit
-        atexit.register(self.cleanup)
-        
-        # Cache embeddings for retrieval
-        self._embeddings_cache = {}
-    
-    def store(self, embeddings: List[Embedding]) -> None:
-        """Store embeddings in temporary Chroma instance.
-        
-        Args:
-            embeddings: List of embeddings to store
+        self.embeddings: List[np.ndarray] = []
+        self.segments: List['CodeSegment'] = []
+
+    def store(self, embeddings: List[Tuple[np.ndarray, 'CodeSegment']]) -> None:
+        """Store embeddings and their associated code segments."""
+        for embedding, segment in embeddings:
+            self.embeddings.append(embedding)
+            self.segments.append(segment)
+
+    def search(self, query: np.ndarray, top_k: int = 5) -> List[SearchResult]:
         """
-        if not embeddings:
-            return
-            
-        # Prepare data for Chroma
-        ids = [str(i) for i in range(len(embeddings))]
-        vectors = [e.vector for e in embeddings]
-        
-        # Cache embeddings for retrieval
-        for id_, emb in zip(ids, embeddings):
-            self._embeddings_cache[id_] = emb
-        
-        # Add to collection
-        self._collection.add(
-            embeddings=vectors,
-            ids=ids
-        )
-    
-    def search(self, query: Embedding) -> List[Embedding]:
-        """Search temporary Chroma instance.
+        Search for similar code segments using cosine similarity.
         
         Args:
-            query: Query embedding
+            query: Query embedding vector
+            top_k: Number of results to return
             
         Returns:
-            List of results ordered by similarity
+            List of SearchResults sorted by similarity score (highest first)
         """
-        # Search collection
-        results = self._collection.query(
-            query_embeddings=[query.vector],
-            n_results=5  # Return top 5 matches
-        )
+        if not self.embeddings:
+            return []
+            
+        # Convert list to numpy array for vectorized operations
+        embeddings_array = np.array(self.embeddings)
         
-        # Get matching embeddings from cache
-        matches = []
-        if results and 'ids' in results:
-            for id_ in results['ids'][0]:  # First query's results
-                if id_ in self._embeddings_cache:
-                    matches.append(self._embeddings_cache[id_])
-                    
-        return matches
-    
-    def cleanup(self) -> None:
-        """Clean up temporary storage."""
-        import shutil
+        # Compute cosine similarity
+        # Normalize vectors
+        query_norm = query / np.linalg.norm(query)
+        embeddings_norm = embeddings_array / np.linalg.norm(embeddings_array, axis=1)[:, np.newaxis]
         
-        try:
-            # Close Chroma client
-            if hasattr(self, '_client'):
-                self._client.reset()
-                
-            # Remove temporary directory
-            if hasattr(self, '_temp_dir'):
-                shutil.rmtree(self._temp_dir, ignore_errors=True)
-                
-        except Exception as e:
-            print(f"Error during cleanup: {str(e)}")
+        # Compute dot product of normalized vectors (cosine similarity)
+        similarities = np.dot(embeddings_norm, query_norm)
+        
+        # Get indices of top k results
+        top_indices = np.argsort(similarities)[-top_k:][::-1]
+        
+        # Create SearchResult objects
+        results = []
+        for idx in top_indices:
+            results.append(SearchResult(
+                segment=self.segments[idx],
+                score=float(similarities[idx])
+            ))
+            
+        return results
 
-# Future implementation
-# class PersistentVectorStore(VectorStore[E, R]):
-#     """Persistent vector store implementation."""
-#     pass
+    def cleanup(self) -> None:
+        """Clean up stored embeddings and segments."""
+        self.embeddings = []
+        self.segments = []
+
+class PersistentVectorStore(VectorStore):
+    """Persistent vector store implementation that saves embeddings to disk."""
+    
+    def __init__(self, storage_dir: Path):
+        """
+        Initialize persistent vector store.
+        
+        Args:
+            storage_dir: Directory to store embeddings and metadata
+        """
+        self.storage_dir = storage_dir
+        self.embeddings_file = storage_dir / "embeddings.npy"
+        self.segments_file = storage_dir / "segments.pkl"
+        self.metadata_file = storage_dir / "metadata.json"
+        
+        # Create storage directory if it doesn't exist
+        os.makedirs(storage_dir, exist_ok=True)
+        
+        # Load existing data if available
+        self.embeddings: List[np.ndarray] = []
+        self.segments: List['CodeSegment'] = []
+        self._load()
+
+    def _load(self) -> None:
+        """Load embeddings and segments from disk if they exist."""
+        try:
+            if self.embeddings_file.exists():
+                self.embeddings = list(np.load(self.embeddings_file, allow_pickle=True))
+            if self.segments_file.exists():
+                with open(self.segments_file, 'rb') as f:
+                    self.segments = pickle.load(f)
+        except Exception as e:
+            print(f"Warning: Failed to load existing data: {e}")
+            self.embeddings = []
+            self.segments = []
+
+    def _save(self) -> None:
+        """Save embeddings and segments to disk."""
+        try:
+            # Save embeddings as numpy array
+            np.save(self.embeddings_file, np.array(self.embeddings))
+            
+            # Save segments using pickle
+            with open(self.segments_file, 'wb') as f:
+                pickle.dump(self.segments, f)
+                
+            # Save metadata
+            with open(self.metadata_file, 'w') as f:
+                json.dump({
+                    'count': len(self.embeddings),
+                    'dimension': len(self.embeddings[0]) if self.embeddings else 0
+                }, f)
+        except Exception as e:
+            print(f"Warning: Failed to save data: {e}")
+
+    def store(self, embeddings: List[Tuple[np.ndarray, 'CodeSegment']]) -> None:
+        """Store embeddings and their associated code segments."""
+        for embedding, segment in embeddings:
+            self.embeddings.append(embedding)
+            self.segments.append(segment)
+        self._save()
+
+    def search(self, query: np.ndarray, top_k: int = 5) -> List[SearchResult]:
+        """
+        Search for similar code segments using cosine similarity.
+        
+        Args:
+            query: Query embedding vector
+            top_k: Number of results to return
+            
+        Returns:
+            List of SearchResults sorted by similarity score (highest first)
+        """
+        if not self.embeddings:
+            return []
+            
+        # Convert list to numpy array for vectorized operations
+        embeddings_array = np.array(self.embeddings)
+        
+        # Compute cosine similarity
+        # Normalize vectors
+        query_norm = query / np.linalg.norm(query)
+        embeddings_norm = embeddings_array / np.linalg.norm(embeddings_array, axis=1)[:, np.newaxis]
+        
+        # Compute dot product of normalized vectors (cosine similarity)
+        similarities = np.dot(embeddings_norm, query_norm)
+        
+        # Get indices of top k results
+        top_indices = np.argsort(similarities)[-top_k:][::-1]
+        
+        # Create SearchResult objects
+        results = []
+        for idx in top_indices:
+            results.append(SearchResult(
+                segment=self.segments[idx],
+                score=float(similarities[idx])
+            ))
+            
+        return results
+
+    def cleanup(self) -> None:
+        """Clean up stored embeddings and segments."""
+        self.embeddings = []
+        self.segments = []
+        
+        # Remove files
+        try:
+            if self.embeddings_file.exists():
+                os.remove(self.embeddings_file)
+            if self.segments_file.exists():
+                os.remove(self.segments_file)
+            if self.metadata_file.exists():
+                os.remove(self.metadata_file)
+        except Exception as e:
+            print(f"Warning: Failed to remove files during cleanup: {e}")

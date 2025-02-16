@@ -3,19 +3,23 @@
 ## Technology Stack
 
 ### Core Technologies
-- **Language**: Python 3.8+
+- **Language**: Python 3.8-3.11 (PyTorch dependency limits Python version)
 - **Vector Database**: Chroma
-- **Embedding Engine**: Ollama with Llama-3
+- **Embedding Engine**: sentence-transformers with all-MiniLM-L6-v2
 - **Protocol**: MCP (Model Context Protocol)
 
 ### Key Dependencies
 ```plaintext
-chromadb          # Vector database operations
-httpx             # HTTP client for Ollama/OpenRouter APIs
-pydantic          # Data validation
-typing_extensions # Type hints support
-pytest            # Testing framework
-pytest-cov        # Test coverage
+chromadb             # Vector database operations
+sentence-transformers # Efficient embedding generation
+torch               # Deep learning framework required by sentence-transformers
+transformers        # Hugging Face transformers library
+tokenizers          # Fast tokenization
+httpx               # HTTP client for OpenRouter API
+pydantic            # Data validation
+typing_extensions   # Type hints support
+pytest              # Testing framework
+pytest-cov          # Test coverage
 ```
 
 ### Test Dependencies
@@ -28,7 +32,8 @@ pytest-asyncio    # Async test support
 ## Development Environment
 - Local development setup
 - Python virtual environment recommended
-- No external services required beyond Ollama
+- No external services required
+- ~100MB disk space for embedding model (downloaded on first use)
 
 ## Technical Constraints
 
@@ -38,16 +43,21 @@ pytest-asyncio    # Async test support
 - Repository size: <= 100MB
 
 ### Infrastructure Requirements
-- Ollama service running locally
-- Sufficient disk space for temporary vector storage
+- Sufficient disk space for:
+  - Vector storage
+  - Embedding model (~100MB)
 - Adequate RAM for embedding operations
+- No GPU required (CPU-only operation)
 
 ## Integration Points
 
-### Ollama Service
-- Default URL: http://localhost:11434
-- REST API interface
-- Embedding dimension consistency
+### Sentence Transformers
+- Model: all-MiniLM-L6-v2
+- Optimized for:
+  - Fast embedding generation
+  - Efficient batching
+  - Low memory usage
+- Local operation with no API calls
 
 ### MCP Integration
 ```json
@@ -80,7 +90,6 @@ pytest-asyncio    # Async test support
   ```python
   OPENROUTER_API_KEY: str  # OpenRouter API key
   OPENROUTER_MODEL: str    # Model selection (default: google/palm-2-chat-bison)
-  OLLAMA_BASE_URL: str     # Local Ollama service URL
   ```
 
 ### Test Execution
@@ -128,9 +137,9 @@ When Cline detects phrases like "let's check this in", it should:
 5. Report success/failure
 
 ## Future Technical Considerations
-- Caching mechanisms
-- Incremental updates
-- Alternative embedding models
+- Caching mechanisms for embeddings
+- Incremental updates to avoid full reprocessing
+- Alternative embedding models or configurations
 - Enhanced query capabilities
 - Extended git automation features:
   - Branch management

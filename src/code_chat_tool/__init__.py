@@ -1,3 +1,21 @@
-"""Chat with code repositories through vector embeddings."""
+"""
+Initialization module for code_chat_tool package.
 
-__version__ = "0.1.0"
+Exports core functionality from submodules.
+"""
+
+from .code_parser import CodeParser, CodeSegment
+from .embedding import OllamaEmbedder
+from .vector_store import VectorStore, TransientVectorStore, PersistentVectorStore, SearchResult
+from .mcp_tool import ChatWithCodeTool
+
+__all__ = [
+    'CodeParser',
+    'CodeSegment',
+    'OllamaEmbedder',
+    'VectorStore',
+    'TransientVectorStore',
+    'PersistentVectorStore',
+    'SearchResult',
+    'ChatWithCodeTool'
+]

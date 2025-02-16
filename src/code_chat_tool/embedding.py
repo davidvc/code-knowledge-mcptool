@@ -1,103 +1,220 @@
-"""Code embedding functionality using Ollama service."""
-from dataclasses import dataclass
-from typing import List, Optional
-import httpx
-from .code_parser import CodeSegment
+"""
+Embedding Module for Chat with Code Repository Tool
 
-@dataclass
-class Embedding:
-    """Represents a vector embedding with its source code context."""
-    
-    vector: List[float]
-    segment: CodeSegment
-    
-    def __str__(self) -> str:
-        """Return the source code content for this embedding."""
-        return self.segment.content
+This module provides functionality to generate embeddings for code segments using
+either sentence-transformers (recommended) or the local Ollama service.
+"""
+
+from typing import List, Tuple, Union
+import sys
+import httpx
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from code_chat_tool.code_parser import CodeSegment
 
 class OllamaEmbedder:
-    """Handles code embedding using Ollama service."""
-    
-    def __init__(self, base_url: str = "http://localhost:11434"):
-        """Initialize the Ollama embedder.
+    def __init__(self, base_url: str):
+        """
+        Initialize the OllamaEmbedder with a base URL.
         
         Args:
-            base_url: Base URL for Ollama service
+            base_url: The base URL of the local Ollama service
         """
         self.base_url = base_url.rstrip('/')
         
-    def _get_embedding(self, text: str) -> List[float]:
-        """Get embedding vector for text from Ollama.
+    def _get_embedding(self, text: Union[str, List[str]]) -> Union[np.ndarray, List[np.ndarray]]:
+        """
+        Get embeddings using Ollama API.
         
         Args:
-            text: Text to embed
+            text: Single text string or list of text strings to embed
             
         Returns:
-            List of floats representing the embedding vector
+            Single numpy array or list of numpy arrays containing embedding vectors
             
         Raises:
             ConnectionError: If Ollama service is unavailable
-            Exception: For other embedding errors
+            Exception: For other API errors
         """
         url = f"{self.base_url}/api/embeddings"
+        is_batch = isinstance(text, list)
         
         try:
+            # Get embedding with longer timeout since text can be large
             response = httpx.post(
                 url,
                 json={
-                    "model": "llama2",  # TODO: Make configurable
-                    "prompt": text,  # Ollama API uses "prompt" for embeddings
+                    "model": "llama2",  # Use llama2 directly since it's our base requirement
+                    "prompt": text,
+                    "options": {
+                        "temperature": 0.0  # Deterministic output
+                    }
                 },
-                timeout=30.0  # Add timeout
+                timeout=60.0  # Increase timeout further for large files
             )
             response.raise_for_status()
             
             data = response.json()
-            return data.get("embedding", data.get("embeddings", []))  # Ollama might put it under either key
+            if is_batch:
+                if "embeddings" not in data:
+                    raise Exception("No embeddings in batch response")
+                return [np.array(emb, dtype=np.float32) for emb in data["embeddings"]]
+            else:
+                if "embedding" not in data:
+                    raise Exception("No embedding in response")
+                return np.array(data["embedding"], dtype=np.float32)
             
-        except httpx.RequestError as e:
+        except httpx.ConnectError as e:
             raise ConnectionError(f"Failed to connect to Ollama service: {str(e)}")
         except Exception as e:
             raise Exception(f"Error getting embedding: {str(e)}")
-    
-    def embed_text(self, text: str) -> Embedding:
-        """Generate embedding for arbitrary text.
-        
-        Args:
-            text: Text to embed
-            
-        Returns:
-            Embedding instance
+
+    def embed_segments(self, code_segments: List[CodeSegment], batch_size: int = 10) -> List[Tuple[np.ndarray, CodeSegment]]:
         """
-        vector = self._get_embedding(text)
-        
-        # Create a CodeSegment for the query text
-        segment = CodeSegment(
-            content=text,
-            file_path=None,  # type: ignore
-            start_line=1,
-            end_line=1
-        )
-        
-        return Embedding(vector=vector, segment=segment)
-    
-    def embed_segments(self, segments: List[CodeSegment]) -> List[Embedding]:
-        """Generate embeddings for code segments.
+        Generate embeddings for a list of CodeSegment objects.
         
         Args:
-            segments: List of code segments to embed
-            
+            code_segments: List of code segments to embed
+            batch_size: Number of segments to process in each batch
+        
         Returns:
-            List of Embedding instances
+            List of tuples containing (embedding vector, code segment)
             
         Raises:
             ConnectionError: If Ollama service is unavailable
-            Exception: For other embedding errors
+            Exception: For other errors
         """
-        embeddings = []
+        results = []
+        total_segments = len(code_segments)
         
-        for segment in segments:
-            vector = self._get_embedding(segment.content)
-            embeddings.append(Embedding(vector=vector, segment=segment))
+        # Process segments in batches
+        for i in range(0, total_segments, batch_size):
+            batch = code_segments[i:i + batch_size]
+            batch_texts = []
             
-        return embeddings
+            # Prepare batch texts
+            for segment in batch:
+                context = f"File: {segment.path}\n\nContent:\n{segment.content}"
+                batch_texts.append(context)
+            
+            # Get embeddings for batch
+            try:
+                batch_embeddings = self._get_embedding(batch_texts)
+                
+                # Pair embeddings with segments
+                for segment, embedding in zip(batch, batch_embeddings):
+                    results.append((embedding, segment))
+                
+                # Update progress
+                processed = min(i + batch_size, total_segments)
+                sys.stdout.write(f"\rProcessed {processed}/{total_segments} segments")
+                sys.stdout.flush()
+                
+            except Exception as e:
+                sys.stdout.write("\n")  # New line before error
+                raise Exception(f"Error processing batch: {str(e)}")
+        
+        sys.stdout.write("\n")
+        return results
+
+    def embed_text(self, text: str) -> np.ndarray:
+        """
+        Generate an embedding for a text query.
+        
+        Args:
+            text: The text to embed
+        
+        Returns:
+            Numpy array containing the embedding vector
+            
+        Raises:
+            ConnectionError: If Ollama service is unavailable
+            Exception: For other errors
+        """
+        return self._get_embedding(text)
+
+class SentenceTransformerEmbedder:
+    """Fast and efficient embedding generation using sentence-transformers."""
+    
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+        """
+        Initialize the embedder with a sentence-transformer model.
+        
+        Args:
+            model_name: Name of the model to use (default: all-MiniLM-L6-v2)
+        """
+        self.model = SentenceTransformer(model_name)
+        
+    def _get_embedding(self, text: Union[str, List[str]]) -> Union[np.ndarray, List[np.ndarray]]:
+        """
+        Get embeddings using sentence-transformers.
+        
+        Args:
+            text: Single text string or list of text strings to embed
+            
+        Returns:
+            Single numpy array or list of numpy arrays containing embedding vectors
+        """
+        # sentence-transformers handles batching internally
+        embeddings = self.model.encode(
+            text,
+            show_progress_bar=False,
+            convert_to_numpy=True,
+            normalize_embeddings=True  # L2 normalize for cosine similarity
+        )
+        
+        # Handle single input case
+        if isinstance(text, str):
+            return embeddings.squeeze()
+        return list(embeddings)
+
+    def embed_segments(self, code_segments: List[CodeSegment], batch_size: int = 32) -> List[Tuple[np.ndarray, CodeSegment]]:
+        """
+        Generate embeddings for a list of CodeSegment objects.
+        
+        Args:
+            code_segments: List of code segments to embed
+            batch_size: Number of segments to process in each batch
+        
+        Returns:
+            List of tuples containing (embedding vector, code segment)
+        """
+        total_segments = len(code_segments)
+        results = []
+        
+        # Process segments in batches
+        for i in range(0, total_segments, batch_size):
+            batch = code_segments[i:i + batch_size]
+            batch_texts = []
+            
+            # Prepare batch texts
+            for segment in batch:
+                context = f"File: {segment.path}\n\nContent:\n{segment.content}"
+                batch_texts.append(context)
+            
+            # Get embeddings for batch
+            batch_embeddings = self._get_embedding(batch_texts)
+            
+            # Pair embeddings with segments
+            for segment, embedding in zip(batch, batch_embeddings):
+                results.append((embedding, segment))
+            
+            # Update progress
+            processed = min(i + batch_size, total_segments)
+            sys.stdout.write(f"\rProcessed {processed}/{total_segments} segments")
+            sys.stdout.flush()
+        
+        sys.stdout.write("\n")
+        return results
+
+    def embed_text(self, text: str) -> np.ndarray:
+        """
+        Generate an embedding for a text query.
+        
+        Args:
+            text: The text to embed
+        
+        Returns:
+            Numpy array containing the embedding vector
+        """
+        return self._get_embedding(text)

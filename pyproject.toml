@@ -6,12 +6,16 @@ build-backend = "hatchling.build"
 name = "code-chat-tool"
 version = "0.1.0"
 description = "Chat with code repository through vector embeddings"
-requires-python = ">=3.8"
+requires-python = ">=3.8,<3.12"  # PyTorch currently supports up to Python 3.11
 dependencies = [
     "chromadb",
     "httpx",
     "pydantic",
-    "typing-extensions"
+    "typing-extensions",
+    "sentence-transformers>=2.0.0",
+    "torch>=1.11.0",
+    "transformers>=4.6.0",
+    "tokenizers>=0.10.3"
 ]
 
 [project.optional-dependencies]

@@ -1,112 +1,50 @@
-"""Code parsing and repository traversal functionality."""
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Iterator, List, Optional, Set
+"""
+Code Parser Module for Chat with Code Repository Tool
 
+This module provides functionality to parse a local repository and extract code files.
+"""
+
+import os
+from dataclasses import dataclass
 
 @dataclass
 class CodeSegment:
-    """Represents a segment of code with relevant metadata."""
-    
+    path: str
     content: str
-    file_path: Path
-    start_line: int
-    end_line: int
-    language: Optional[str] = None
 
+def parse_repository(repo_path):
+    """
+    Parse the repository located at repo_path.
+    Recursively scans the directory for files with code-related extensions,
+    reads them, and returns a list of CodeSegment objects.
+
+    Returns:
+        List[CodeSegment]: A list where each item is a CodeSegment with:
+            - path: the full file path
+            - content: the content of the file
+    """
+    code_files = []
+    # Allowed file extensions for code files. Extend this set as needed.
+    allowed_extensions = {'.py', '.js', '.java', '.txt', '.md', '.c', '.cpp', '.h', '.html', '.css'}
+    
+    for root, dirs, files in os.walk(repo_path):
+        for file in files:
+            ext = os.path.splitext(file)[1].lower()
+            if ext in allowed_extensions:
+                full_path = os.path.join(root, file)
+                try:
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    code_files.append(CodeSegment(path=full_path, content=content))
+                except Exception as e:
+                    # If a file cannot be read, skip it.
+                    pass
+    return code_files
 
 class CodeParser:
-    """Handles traversal and parsing of code repositories."""
-
-    def __init__(
-        self,
-        ignore_patterns: Optional[List[str]] = None,
-        max_file_size: int = 1024 * 1024,  # 1MB
-        max_files: Optional[int] = None,  # Maximum number of files to process
-    ):
-        """Initialize the code parser.
-        
-        Args:
-            ignore_patterns: List of glob patterns to ignore
-            max_file_size: Maximum file size to process in bytes
-        """
-        self.ignore_patterns = set(ignore_patterns or [])
-        self.max_file_size = max_file_size
-        self.max_files = max_files
-        self._processed_files = 0
-        self._supported_extensions: Set[str] = {
-            '.py', '.js', '.ts', '.java', '.cpp', '.c',
-            '.h', '.hpp', '.cs', '.rb', '.go', '.rs',
-            '.php', '.scala', '.kt', '.swift'
-        }
-    
-    def should_process_file(self, path: Path) -> bool:
-        """Check if a file should be processed.
-        
-        Args:
-            path: Path to the file
-            
-        Returns:
-            True if the file should be processed, False otherwise
-        """
-        # Check file extension
-        if path.suffix not in self._supported_extensions:
-            return False
-            
-        # Check file size
-        if path.stat().st_size > self.max_file_size:
-            return False
-            
-        # Check ignore patterns
-        for pattern in self.ignore_patterns:
-            if path.match(pattern):
-                return False
-                
-        return True
-    
-    def parse_repository(self, repo_path: Path) -> Iterator[CodeSegment]:
-        """Parse all code files in a repository.
-        
-        Args:
-            repo_path: Path to the repository
-            
-        Yields:
-            CodeSegment instances for each parsed code segment
-        """
-        self._processed_files = 0
-        for file_path in repo_path.rglob('*'):
-            if not file_path.is_file() or not self.should_process_file(file_path):
-                continue
-                
-            if self.max_files and self._processed_files >= self.max_files:
-                break
-                
-            self._processed_files += 1
-            yield from self.parse_file(file_path)
-    
-    def parse_file(self, file_path: Path) -> Iterator[CodeSegment]:
-        """Parse a single code file into segments.
-        
-        Args:
-            file_path: Path to the code file
-            
-        Yields:
-            CodeSegment instances for the parsed file
-        """
-        try:
-            content = file_path.read_text(encoding='utf-8')
-            
-            # TODO: Implement more sophisticated segmentation
-            # For now, treat whole file as one segment
-            yield CodeSegment(
-                content=content,
-                file_path=file_path,
-                start_line=1,
-                end_line=len(content.splitlines()),
-                language=file_path.suffix[1:]  # Remove leading dot
-            )
-            
-        except (UnicodeDecodeError, OSError) as e:
-            # Log error but continue processing other files
-            print(f"Error processing {file_path}: {str(e)}")
-            return
+    """
+    Wrapper class for parsing code repositories.
+    Provides an instance method to parse a repository by calling the module-level function.
+    """
+    def parse_repository(self, repo_path):
+        return parse_repository(repo_path)
