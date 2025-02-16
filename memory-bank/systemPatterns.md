@@ -87,6 +87,29 @@ Allows for different embedding strategies if needed.
 - Memory management
 - Response time optimization
 
+## Testing Strategy
+
+### Integration Testing
+- Real-world repositories as test data:
+  - Flask (Python web framework)
+  - Commons Lang (Java utility library)
+- Integration test suite covers:
+  - Repository processing
+  - Query handling
+  - Response generation
+  - Error scenarios
+
+### Response Quality Validation
+- Abstract ResponseEvaluator interface
+- LLM-based evaluation using OpenRouter
+- Quality metrics:
+  1. Accuracy of information
+  2. Relevance to query
+  3. Completeness of answer
+  4. Clarity of explanation
+- Configurable acceptance criteria (score >= 0.7)
+- Extensible evaluator design for multiple providers
+
 ## Security Measures
 - Local-only operation
 - Temporary storage

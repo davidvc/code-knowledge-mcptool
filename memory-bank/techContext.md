@@ -11,9 +11,18 @@
 ### Key Dependencies
 ```plaintext
 chromadb          # Vector database operations
-httpx             # HTTP client for Ollama API
+httpx             # HTTP client for Ollama/OpenRouter APIs
 pydantic          # Data validation
 typing_extensions # Type hints support
+pytest            # Testing framework
+pytest-cov        # Test coverage
+```
+
+### Test Dependencies
+```plaintext
+openrouter-client # OpenRouter API integration
+pytest-env        # Environment variable management
+pytest-asyncio    # Async test support
 ```
 
 ## Development Environment
@@ -62,10 +71,22 @@ typing_extensions # Type hints support
 - Clean session management
 - Limited file system access
 
-## Testing Strategy
-- Unit tests for core components
-- Integration tests for Ollama interaction
-- Performance benchmarks
+## Testing Infrastructure
+
+### Integration Testing
+- Real repository submodules in test/integration/test-repos
+- Response quality validation via OpenRouter API
+- Configurable test settings:
+  ```python
+  OPENROUTER_API_KEY: str  # OpenRouter API key
+  OPENROUTER_MODEL: str    # Model selection (default: google/palm-2-chat-bison)
+  OLLAMA_BASE_URL: str     # Local Ollama service URL
+  ```
+
+### Test Execution
+- Integration tests with real codebases
+- Response quality validation using LLMs
+- Performance benchmarking
 - Security validation
 
 ## Monitoring & Debugging

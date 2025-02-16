@@ -18,6 +18,17 @@ Initial project setup and requirements definition for the Chat with Code Reposit
      - Designed for easy switch to persistence
    - MCP tool integration for Cline compatibility
 
+3. **Testing Strategy**:
+   - Integration testing with real-world codebases:
+     - Flask for Python capabilities
+     - Commons Lang for Java capabilities
+   - Response quality evaluation using LLMs:
+     - Abstract evaluator interface for flexibility
+     - Initial implementation using OpenRouter
+     - Configurable model selection (default: PaLM 2)
+     - Quantitative quality scoring (>= 0.7 threshold)
+   - Comprehensive test scenarios covering core workflows
+
 ## In Progress
 - Requirements documentation
 - System architecture design

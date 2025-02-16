@@ -1,0 +1,6 @@
+[submodule "tests/integration/test-repos/flask"]
+	path = tests/integration/test-repos/flask
+	url = git@github.com:pallets/flask.git
+[submodule "tests/integration/test-repos/commons-lang"]
+	path = tests/integration/test-repos/commons-lang
+	url = git@github.com:apache/commons-lang.git

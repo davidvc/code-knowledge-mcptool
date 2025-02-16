@@ -10,9 +10,12 @@
 - Requirements documentation refinement
 - Technical specification development
 - System architecture detailing
+- Testing infrastructure setup:
+  - Integration test framework with real repositories
+  - Response quality evaluation using LLMs
+  - Test configuration management
 
 ## Not Started
-- Project structure setup
 - Development environment configuration
 - Core implementation:
   - MCP server
@@ -23,7 +26,9 @@
   - Response generation
 
 ## Known Issues
-None at this stage - project is in initial planning phase
+- Need to make integration test configuration flexible
+- OpenRouter API key handling needs to be configurable
+- Cleanup of temporary test artifacts needs implementation
 
 ## Testing Status
 - No tests implemented yet
