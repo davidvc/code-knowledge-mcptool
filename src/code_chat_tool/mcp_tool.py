@@ -1,10 +1,10 @@
 """MCP tool implementation for code chat functionality."""
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 import numpy as np
 
 from .code_parser import CodeParser, CodeSegment
-from .embedding import OllamaEmbedder
+from .embedding import OllamaEmbedder, SentenceTransformerEmbedder
 from .vector_store import VectorStore, SearchResult
 
 class ChatWithCodeTool:
@@ -12,7 +12,7 @@ class ChatWithCodeTool:
     
     def __init__(
         self,
-        embedder: OllamaEmbedder,
+        embedder: Union[OllamaEmbedder, SentenceTransformerEmbedder],
         vector_store: VectorStore
     ):
         """Initialize the chat tool.
@@ -65,8 +65,16 @@ class ChatWithCodeTool:
         Returns:
             Formatted response string
         """
-        # Filter results with low similarity scores
-        relevant_results = [r for r in results if r.score > 0.5]
+        # Print all results with scores for debugging
+        print("\nDebug - All results:")
+        for i, r in enumerate(results):
+            print(f"Result {i+1} - Score: {r.score:.3f}")
+            print(f"File: {Path(r.segment.path).name}")
+            print(f"Content preview: {r.segment.content[:100]}...")
+            print("-" * 40)
+        
+        # Filter results with low similarity scores (lowered threshold)
+        relevant_results = [r for r in results if r.score > 0.2]
         
         if not relevant_results:
             return "I couldn't find any relevant code that answers your question."
@@ -82,7 +90,7 @@ class ChatWithCodeTool:
             # Get relative path for cleaner display
             rel_path = Path(result.segment.path).name
             
-            response_parts.append(f"\n{i}. From {rel_path}:\n")
+            response_parts.append(f"\n{i}. From {rel_path} (similarity score: {result.score:.3f}):\n")
             response_parts.append(f"```\n{result.segment.content}\n```\n")
             
         # Add summary if multiple segments found

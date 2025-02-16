@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
+import os
 import httpx
 
 @dataclass
@@ -27,14 +28,16 @@ class ResponseEvaluator(ABC):
 class OpenRouterEvaluator(ResponseEvaluator):
     """Evaluates responses using OpenRouter's API."""
     
-    def __init__(self, api_key: str, model: str = "google/palm-2-chat-bison"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "google/palm-2-chat-bison"):
         """Initialize the evaluator.
         
         Args:
-            api_key: OpenRouter API key
+            api_key: OpenRouter API key (defaults to OPENROUTER_API_KEY environment variable)
             model: Model to use for evaluation (defaults to PaLM 2)
         """
-        self.api_key = api_key
+        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
+        if not self.api_key:
+            raise ValueError("OpenRouter API key must be provided either as argument or OPENROUTER_API_KEY environment variable")
         self.model = model
         
     def evaluate_response(
@@ -83,8 +86,9 @@ ACCEPTABLE: [true/false]
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
-                    "HTTP-Referer": "https://github.com/your-username/code-chat-tool",  # TODO: Make configurable
-                    "X-Title": "Code Chat Tool Tests"
+                    "HTTP-Referer": "https://github.com/rooveterinaryinc/code_mcp_tool",
+                    "X-Title": "Code Chat Tool Tests",
+                    "Content-Type": "application/json"
                 },
                 json={
                     "model": self.model,

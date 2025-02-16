@@ -75,7 +75,7 @@ class TransientVectorStore(VectorStore):
             return []
             
         # Convert list to numpy array for vectorized operations
-        embeddings_array = np.array(self.embeddings)
+        embeddings_array = np.stack(self.embeddings)
         
         # Compute cosine similarity
         # Normalize vectors
@@ -130,7 +130,9 @@ class PersistentVectorStore(VectorStore):
         """Load embeddings and segments from disk if they exist."""
         try:
             if self.embeddings_file.exists():
-                self.embeddings = list(np.load(self.embeddings_file, allow_pickle=True))
+                # Load as numpy array and convert to list
+                embeddings_array = np.load(self.embeddings_file)
+                self.embeddings = [embeddings_array[i] for i in range(len(embeddings_array))]
             if self.segments_file.exists():
                 with open(self.segments_file, 'rb') as f:
                     self.segments = pickle.load(f)
@@ -142,8 +144,10 @@ class PersistentVectorStore(VectorStore):
     def _save(self) -> None:
         """Save embeddings and segments to disk."""
         try:
-            # Save embeddings as numpy array
-            np.save(self.embeddings_file, np.array(self.embeddings))
+            # Convert list of embeddings to numpy array
+            if self.embeddings:
+                embeddings_array = np.stack(self.embeddings)
+                np.save(self.embeddings_file, embeddings_array)
             
             # Save segments using pickle
             with open(self.segments_file, 'wb') as f:
@@ -180,7 +184,7 @@ class PersistentVectorStore(VectorStore):
             return []
             
         # Convert list to numpy array for vectorized operations
-        embeddings_array = np.array(self.embeddings)
+        embeddings_array = np.stack(self.embeddings)
         
         # Compute cosine similarity
         # Normalize vectors

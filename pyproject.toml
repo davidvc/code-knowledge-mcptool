@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "setuptools>=61.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -14,8 +14,9 @@ dependencies = [
     "typing-extensions",
     "sentence-transformers>=2.0.0",
     "torch>=1.11.0",
-    "transformers>=4.6.0",
-    "tokenizers>=0.10.3"
+    "transformers==4.41.0",
+    "tokenizers>=0.10.3",
+    "numpy<2.0.0"  # Downgrade to ensure compatibility with existing modules
 ]
 
 [project.optional-dependencies]
