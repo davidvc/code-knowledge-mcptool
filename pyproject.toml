@@ -3,17 +3,16 @@ requires = ["hatchling", "setuptools>=61.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "code-chat-tool"
+name = "code-knowledge-tool"
 version = "0.1.0"
-description = "Chat with code repository through vector embeddings"
-requires-python = ">=3.8,<3.12"  # PyTorch currently supports up to Python 3.11
+description = "Knowledge management tool for code repositories using vector embeddings"
+requires-python = ">=3.8,<3.14"
 dependencies = [
     "chromadb",
     "httpx",
     "pydantic",
     "typing-extensions",
     "sentence-transformers>=2.0.0",
-    "torch>=1.11.0",
     "transformers==4.41.0",
     "tokenizers>=0.10.3",
     "numpy<2.0.0"  # Downgrade to ensure compatibility with existing modules
@@ -27,6 +26,12 @@ dev = [
     "mypy",
     "ruff"
 ]
+torch = [
+    "torch>=1.11.0"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/code_knowledge_tool"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q"

@@ -1,4 +1,4 @@
-"""Code Chat Tool package."""
+"""Code Knowledge Tool package."""
 
 from .code_parser import (
     CodeParser,
@@ -19,7 +19,7 @@ from .embedding import (
 )
 
 from .mcp_tool import (
-    ChatWithCodeTool,
+    CodeKnowledgeTool,
     KnowledgeEntry,
     ContextEntry
 )
@@ -34,7 +34,7 @@ __all__ = [
     'StoreCodeSegment',
     'SentenceTransformerEmbedder',
     'OllamaEmbedder',
-    'ChatWithCodeTool',
+    'CodeKnowledgeTool',
     'KnowledgeEntry',
     'ContextEntry'
 ]

@@ -10,7 +10,7 @@ import sys
 import httpx
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from code_chat_tool.code_parser import CodeSegment
+from code_knowledge_tool.code_parser import CodeSegment
 
 class OllamaEmbedder:
     def __init__(self, base_url: str):

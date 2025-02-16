@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "code_knowledge": {
+      "command": "python",
+      "args": ["-m", "code_knowledge_tool.mcp_tool"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "SENTENCE_TRANSFORMERS_HOME": "${userHome}/.cache/sentence-transformers"
+      },
+      "tools": [
+        {
+          "name": "code_knowledge_tool",
+          "description": "Knowledge management tool for code repositories using vector embeddings",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "source_path": {
+                "type": "string",
+                "description": "Path to the code repository"
+              },
+              "query": {
+                "type": "string",
+                "description": "Natural language query about the codebase"
+              }
+            },
+            "required": ["source_path", "query"]
+          }
+        }
+      ]
+    }
+  }
+}

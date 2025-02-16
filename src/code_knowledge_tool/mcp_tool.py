@@ -1,4 +1,4 @@
-"""MCP tool implementation for memory bank functionality."""
+"""MCP tool implementation for code knowledge management functionality."""
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import numpy as np
@@ -21,7 +21,7 @@ class ContextEntry:
     content: str
     relevance: float
 
-class ChatWithCodeTool:
+class CodeKnowledgeTool:
     """MCP tool for managing code knowledge."""
     
     def __init__(
@@ -29,7 +29,7 @@ class ChatWithCodeTool:
         embedder: SentenceTransformerEmbedder,
         vector_store: VectorStore
     ):
-        """Initialize the chat tool.
+        """Initialize the knowledge tool.
         
         Args:
             embedder: Component for generating embeddings

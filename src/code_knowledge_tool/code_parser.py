@@ -1,5 +1,5 @@
 """
-Code Parser Module for Chat with Code Repository Tool
+Code Parser Module for Code Knowledge Tool
 
 This module provides functionality to parse a local repository and extract code files.
 """
