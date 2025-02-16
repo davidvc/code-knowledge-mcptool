@@ -51,37 +51,24 @@ Add the same configuration as above.
 
 2. Restart RooCode/Cline to load the new tool.
 
-## Usage
+## Using as Memory Bank and RAG Context Provider
 
-The tool provides several ways to interact with your codebase:
+This tool can serve as your project's memory bank and RAG context provider. To set this up:
 
-1. Build knowledge about your code:
-```python
-# Add knowledge about a file or component
-knowledge_tool.add_knowledge(
-    path="src/your_file.py",
-    summary="Description of the code's purpose",
-    metadata={"type": "file", "last_updated": "2024-02-16"}
-)
+1. Copy the provided template to your project:
+```bash
+cp clinerules_template.md /path/to/your/project/.clinerules
 ```
 
-2. Search your codebase:
-```python
-# Search for specific functionality
-results = knowledge_tool.search_knowledge("How does authentication work?")
-for result in results:
-    print(f"File: {result.segment.path}")
-    print(f"Relevance: {result.score}")
-```
+2. Customize the rules and patterns in .clinerules for your project's needs
 
-3. Get context for tasks:
-```python
-# Get relevant context for a development task
-context = knowledge_tool.get_relevant_context("Implement password reset")
-for entry in context:
-    print(f"File: {entry.path}")
-    print(f"Relevance: {entry.relevance}")
-```
+The template includes comprehensive instructions for:
+- Knowledge base management
+- RAG-based development workflows
+- Code quality guidelines
+- Memory management practices
+
+See clinerules_template.md for the full configuration and usage details.
 
 ## Features
 
@@ -90,6 +77,7 @@ for entry in context:
 - Support for multiple file types
 - Context-aware code understanding
 - Integration with RooCode and Cline via MCP
+- RAG-based context augmentation
 
 ## Requirements
 
