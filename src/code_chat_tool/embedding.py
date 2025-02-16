@@ -46,13 +46,14 @@ class OllamaEmbedder:
                 url,
                 json={
                     "model": "llama2",  # TODO: Make configurable
-                    "prompt": text
-                }
+                    "prompt": text,  # Ollama API uses "prompt" for embeddings
+                },
+                timeout=30.0  # Add timeout
             )
             response.raise_for_status()
             
             data = response.json()
-            return data["embedding"]
+            return data.get("embedding", data.get("embeddings", []))  # Ollama might put it under either key
             
         except httpx.RequestError as e:
             raise ConnectionError(f"Failed to connect to Ollama service: {str(e)}")

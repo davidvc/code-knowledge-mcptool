@@ -95,8 +95,44 @@ pytest-asyncio    # Async test support
 - Error tracking
 - Resource usage monitoring
 
+## MCP Tools Configuration
+
+### Git Automation Tool
+```json
+{
+  "tool_name": "git_automation",
+  "description": "Automates git operations when triggered by specific phrases",
+  "input_schema": {
+    "trigger_phrase": "string",
+    "commit_message": "string (optional)",
+    "push": "boolean (optional, default: true)"
+  },
+  "output_schema": {
+    "success": "boolean",
+    "message": "string",
+    "git_output": "string"
+  },
+  "trigger_phrases": [
+    "let's check this in",
+    "commit and push changes"
+  ]
+}
+```
+
+### Activation
+When Cline detects phrases like "let's check this in", it should:
+1. Generate a descriptive commit message from recent changes
+2. Execute git add -A
+3. Commit with the generated message
+4. Push to the remote repository
+5. Report success/failure
+
 ## Future Technical Considerations
 - Caching mechanisms
 - Incremental updates
 - Alternative embedding models
 - Enhanced query capabilities
+- Extended git automation features:
+  - Branch management
+  - Conflict resolution
+  - Custom commit message templates

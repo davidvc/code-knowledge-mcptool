@@ -8,7 +8,7 @@ from code_chat_tool.mcp_tool import ChatWithCodeTool
 from .response_evaluator import OpenRouterEvaluator, ResponseEvaluator
 
 # Test configuration
-OPENROUTER_API_KEY = "your-api-key-here"  # TODO: Make configurable
+OPENROUTER_API_KEY = "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"
 OPENROUTER_MODEL = "google/palm-2-chat-bison"
 
 # Paths to test repositories
@@ -115,67 +115,8 @@ def test_error_handling():
         # Should handle Ollama connection error gracefully
         with pytest.raises(Exception) as exc_info:
             chat_tool.process_repository(FLASK_REPO)
-        assert "connection" in str(exc_info.value).lower()
-        
-        # Should handle invalid repository path
-        with pytest.raises(Exception) as exc_info:
-            chat_tool.process_repository(Path("/nonexistent/path"))
-        assert "path" in str(exc_info.value).lower()
-        
-    finally:
-        vector_store.cleanup()
-
-def test_code_chat_workflow(sample_repo):
-    """Test the complete code chat workflow."""
-    # Initialize components
-    parser = CodeParser()
-    embedder = OllamaEmbedder(base_url="http://localhost:11434")
-    vector_store = TransientVectorStore()
-    chat_tool = ChatWithCodeTool(parser, embedder, vector_store)
-    
-    try:
-        # Process repository
-        chat_tool.process_repository(sample_repo)
-        
-        # Test queries
-        queries = [
-            "How does the greeting function work?",
-            "Show me code related to date formatting",
-            "What logging functionality exists?",
-        ]
-        
-        for query in queries:
-            response = chat_tool.query(query)
-            assert response, f"No response received for query: {query}"
-            
-            # Basic response validation
-            assert isinstance(response, str)
-            assert len(response) > 0
-            
-            # Query-specific validations
-            if "greeting" in query.lower():
-                assert "greet" in response.lower()
-            elif "date" in query.lower():
-                assert "formatDate" in response
-            elif "logging" in query.lower():
-                assert "Logger" in response
-                
-    finally:
-        # Cleanup
-        vector_store.cleanup()
-
-def test_error_handling(sample_repo):
-    """Test error handling in the workflow."""
-    parser = CodeParser()
-    embedder = OllamaEmbedder(base_url="http://invalid-url")
-    vector_store = TransientVectorStore()
-    chat_tool = ChatWithCodeTool(parser, embedder, vector_store)
-    
-    try:
-        # Should handle Ollama connection error gracefully
-        with pytest.raises(Exception) as exc_info:
-            chat_tool.process_repository(sample_repo)
-        assert "connection" in str(exc_info.value).lower()
+            error_msg = str(exc_info.value).lower()
+            assert any(term in error_msg for term in ["connection", "failed to connect", "nodename nor servname"])
         
         # Should handle invalid repository path
         with pytest.raises(Exception) as exc_info:

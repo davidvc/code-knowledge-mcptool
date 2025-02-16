@@ -22,6 +22,7 @@ class CodeParser:
         self,
         ignore_patterns: Optional[List[str]] = None,
         max_file_size: int = 1024 * 1024,  # 1MB
+        max_files: Optional[int] = None,  # Maximum number of files to process
     ):
         """Initialize the code parser.
         
@@ -31,6 +32,8 @@ class CodeParser:
         """
         self.ignore_patterns = set(ignore_patterns or [])
         self.max_file_size = max_file_size
+        self.max_files = max_files
+        self._processed_files = 0
         self._supported_extensions: Set[str] = {
             '.py', '.js', '.ts', '.java', '.cpp', '.c',
             '.h', '.hpp', '.cs', '.rb', '.go', '.rs',
@@ -65,15 +68,20 @@ class CodeParser:
         """Parse all code files in a repository.
         
         Args:
-            repo_path: Path to the repository root
+            repo_path: Path to the repository
             
         Yields:
             CodeSegment instances for each parsed code segment
         """
+        self._processed_files = 0
         for file_path in repo_path.rglob('*'):
             if not file_path.is_file() or not self.should_process_file(file_path):
                 continue
                 
+            if self.max_files and self._processed_files >= self.max_files:
+                break
+                
+            self._processed_files += 1
             yield from self.parse_file(file_path)
     
     def parse_file(self, file_path: Path) -> Iterator[CodeSegment]:
