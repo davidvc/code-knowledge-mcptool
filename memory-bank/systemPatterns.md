@@ -35,10 +35,24 @@ graph TD
 - Handles code semantics effectively
 
 ### 3. Vector Database
-- Local Chroma instance
-- Temporary storage per session
-- Efficient similarity search
-- Clean teardown after use
+- Abstracted storage interface
+- Initial implementation: temporary per session
+- Designed for easy persistence switch
+- Common operations interface:
+  ```python
+  class VectorStore(ABC):
+      @abstractmethod
+      def store(self, embeddings: List[Embedding]) -> None: pass
+      
+      @abstractmethod
+      def search(self, query: Embedding) -> List[Result]: pass
+      
+      @abstractmethod
+      def cleanup(self) -> None: pass
+  ```
+- Implementation variants:
+  - TransientVectorStore (initial)
+  - PersistentVectorStore (future)
 
 ### 4. MCP Integration
 - JSON interface compliant

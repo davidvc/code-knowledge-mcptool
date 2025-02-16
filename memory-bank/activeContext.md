@@ -13,7 +13,9 @@ Initial project setup and requirements definition for the Chat with Code Reposit
 2. **Architecture Decisions**:
    - Local-only operation for simplicity and security
    - Direct integration with Ollama service
-   - Temporary vector storage per session
+   - Abstracted vector storage interface:
+     - Initial implementation: temporary per session
+     - Designed for easy switch to persistence
    - MCP tool integration for Cline compatibility
 
 ## In Progress
