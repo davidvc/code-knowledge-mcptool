@@ -3,6 +3,9 @@
 ## Problem Space
 Developers need efficient ways to understand and navigate codebases. While tools like grep or GitHub search exist, they lack the natural language understanding that would make code exploration more intuitive and accessible.
 
+We particularly need this functionality available to AI coding agents like Cline, so they can 
+implement more intelligent solutions through deepern understanding of the code base they are working in.
+
 ## Solution Overview
 A tool that enables natural conversation with code repositories by:
 1. Converting code into vector embeddings that capture semantic meaning
@@ -17,12 +20,14 @@ A tool that enables natural conversation with code repositories by:
 - Seamless integration with existing development workflow
 
 ## Target Users
+- AI coding agents that need to understand a code base
 - Developers working with unfamiliar codebases
 - Team members onboarding to new projects
 - Code reviewers seeking deeper understanding
 - Technical architects analyzing system structure
 
 ## Key Benefits
+0. Improved AI-generated code
 1. Faster code comprehension
 2. Reduced time spent searching documentation
 3. More natural interaction with codebases
