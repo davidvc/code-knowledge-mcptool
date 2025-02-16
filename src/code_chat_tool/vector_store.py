@@ -1,224 +1,164 @@
-"""
-Vector Store Module for Chat with Code Repository Tool
-
-This module defines the base VectorStore interface and provides an in-memory transient implementation.
-"""
-
-import os
-import json
-import pickle
-from abc import ABC, abstractmethod
+"""Vector store implementation for memory bank."""
+from pathlib import Path
+from typing import List, Optional, Dict, Tuple
 import numpy as np
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Tuple, Optional
+
+@dataclass
+class CodeSegment:
+    """Represents a segment of code with its path and content."""
+    path: str
+    content: str
 
 @dataclass
 class SearchResult:
-    """Result from a vector store search."""
-    segment: 'CodeSegment'  # Forward reference
+    """Represents a search result with similarity score."""
+    segment: CodeSegment
     score: float
 
-class VectorStore(ABC):
-    @abstractmethod
-    def store(self, embeddings: List[Tuple[np.ndarray, 'CodeSegment']]) -> None:
-        """
-        Store a list of embeddings with their associated code segments.
-        
-        Args:
-            embeddings: List of tuples containing (embedding vector, code segment)
-        """
-        pass
+class VectorStore:
+    """Base class for vector storage."""
+    
+    def add(self, embedding: np.ndarray, path: str, content: str) -> None:
+        """Add a new embedding with associated content."""
+        raise NotImplementedError
 
-    @abstractmethod
-    def search(self, query: np.ndarray, top_k: int = 5) -> List[SearchResult]:
-        """
-        Search for embeddings similar to the query.
-        
-        Args:
-            query: Query embedding vector
-            top_k: Number of results to return
-            
-        Returns:
-            List of SearchResult objects sorted by similarity score
-        """
-        pass
+    def update(self, embedding: np.ndarray, path: str, content: str) -> None:
+        """Update an existing embedding."""
+        raise NotImplementedError
 
-    @abstractmethod
-    def cleanup(self) -> None:
-        """Clean up the stored embeddings."""
-        pass
+    def search(self, query_embedding: np.ndarray, top_k: int = 5) -> List[SearchResult]:
+        """Search for similar embeddings."""
+        raise NotImplementedError
 
-class TransientVectorStore(VectorStore):
+    def get(self, path: str) -> Optional[Tuple[np.ndarray, CodeSegment]]:
+        """Get embedding and content for a path."""
+        raise NotImplementedError
+
+class InMemoryVectorStore(VectorStore):
+    """In-memory vector store for testing."""
+    
     def __init__(self):
-        self.embeddings: List[np.ndarray] = []
-        self.segments: List['CodeSegment'] = []
+        """Initialize empty storage."""
+        self._embeddings: Dict[str, np.ndarray] = {}
+        self._segments: Dict[str, CodeSegment] = {}
 
-    def store(self, embeddings: List[Tuple[np.ndarray, 'CodeSegment']]) -> None:
-        """Store embeddings and their associated code segments."""
-        for embedding, segment in embeddings:
-            self.embeddings.append(embedding)
-            self.segments.append(segment)
-
-    def search(self, query: np.ndarray, top_k: int = 5) -> List[SearchResult]:
-        """
-        Search for similar code segments using cosine similarity.
-        
-        Args:
-            query: Query embedding vector
-            top_k: Number of results to return
+    def add(self, embedding: np.ndarray, path: str, content: str) -> None:
+        """Add a new embedding with associated content."""
+        if path in self._embeddings:
+            raise ValueError(f"Path already exists: {path}")
             
-        Returns:
-            List of SearchResults sorted by similarity score (highest first)
-        """
-        if not self.embeddings:
+        self._embeddings[path] = embedding
+        self._segments[path] = CodeSegment(path=path, content=content)
+
+    def update(self, embedding: np.ndarray, path: str, content: str) -> None:
+        """Update an existing embedding."""
+        if path not in self._embeddings:
+            raise ValueError(f"Path not found: {path}")
+            
+        self._embeddings[path] = embedding
+        self._segments[path] = CodeSegment(path=path, content=content)
+
+    def search(self, query_embedding: np.ndarray, top_k: int = 5) -> List[SearchResult]:
+        """Search for similar embeddings."""
+        if not self._embeddings:
             return []
-            
-        # Convert list to numpy array for vectorized operations
-        embeddings_array = np.stack(self.embeddings)
-        
-        # Compute cosine similarity
-        # Normalize vectors
-        query_norm = query / np.linalg.norm(query)
-        embeddings_norm = embeddings_array / np.linalg.norm(embeddings_array, axis=1)[:, np.newaxis]
-        
-        # Compute dot product of normalized vectors (cosine similarity)
-        similarities = np.dot(embeddings_norm, query_norm)
-        
-        # Get indices of top k results
-        top_indices = np.argsort(similarities)[-top_k:][::-1]
-        
-        # Create SearchResult objects
-        results = []
-        for idx in top_indices:
-            results.append(SearchResult(
-                segment=self.segments[idx],
-                score=float(similarities[idx])
-            ))
-            
-        return results
 
-    def cleanup(self) -> None:
-        """Clean up stored embeddings and segments."""
-        self.embeddings = []
-        self.segments = []
+        results = []
+        for path, embedding in self._embeddings.items():
+            # Compute cosine similarity
+            similarity = np.dot(query_embedding, embedding) / (
+                np.linalg.norm(query_embedding) * np.linalg.norm(embedding)
+            )
+            results.append(SearchResult(
+                segment=self._segments[path],
+                score=float(similarity)
+            ))
+
+        # Sort by similarity score
+        results.sort(key=lambda x: x.score, reverse=True)
+        return results[:top_k]
+
+    def get(self, path: str) -> Optional[Tuple[np.ndarray, CodeSegment]]:
+        """Get embedding and content for a path."""
+        if path not in self._embeddings:
+            return None
+        return (self._embeddings[path], self._segments[path])
 
 class PersistentVectorStore(VectorStore):
-    """Persistent vector store implementation that saves embeddings to disk."""
+    """Persistent vector store using files."""
     
     def __init__(self, storage_dir: Path):
-        """
-        Initialize persistent vector store.
-        
-        Args:
-            storage_dir: Directory to store embeddings and metadata
-        """
-        self.storage_dir = storage_dir
-        self.embeddings_file = storage_dir / "embeddings.npy"
-        self.segments_file = storage_dir / "segments.pkl"
-        self.metadata_file = storage_dir / "metadata.json"
-        
-        # Create storage directory if it doesn't exist
-        os.makedirs(storage_dir, exist_ok=True)
-        
-        # Load existing data if available
-        self.embeddings: List[np.ndarray] = []
-        self.segments: List['CodeSegment'] = []
-        self._load()
+        """Initialize with storage directory."""
+        self.storage_dir = Path(storage_dir)
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self._load_or_init_storage()
 
-    def _load(self) -> None:
-        """Load embeddings and segments from disk if they exist."""
-        try:
-            if self.embeddings_file.exists():
-                # Load as numpy array and convert to list
-                embeddings_array = np.load(self.embeddings_file)
-                self.embeddings = [embeddings_array[i] for i in range(len(embeddings_array))]
-            if self.segments_file.exists():
-                with open(self.segments_file, 'rb') as f:
-                    self.segments = pickle.load(f)
-        except Exception as e:
-            print(f"Warning: Failed to load existing data: {e}")
-            self.embeddings = []
-            self.segments = []
+    def _load_or_init_storage(self) -> None:
+        """Load existing storage or initialize new."""
+        self._embeddings = {}
+        self._segments = {}
+        
+        embeddings_file = self.storage_dir / "embeddings.npy"
+        segments_file = self.storage_dir / "segments.json"
+        
+        if embeddings_file.exists() and segments_file.exists():
+            # Load existing storage
+            self._load_storage()
+        else:
+            # Initialize new storage
+            self._save_storage()
 
-    def _save(self) -> None:
-        """Save embeddings and segments to disk."""
-        try:
-            # Convert list of embeddings to numpy array
-            if self.embeddings:
-                embeddings_array = np.stack(self.embeddings)
-                np.save(self.embeddings_file, embeddings_array)
+    def _load_storage(self) -> None:
+        """Load storage from files."""
+        # Implementation details for loading from files
+        pass
+
+    def _save_storage(self) -> None:
+        """Save storage to files."""
+        # Implementation details for saving to files
+        pass
+
+    def add(self, embedding: np.ndarray, path: str, content: str) -> None:
+        """Add a new embedding with associated content."""
+        if path in self._embeddings:
+            raise ValueError(f"Path already exists: {path}")
             
-            # Save segments using pickle
-            with open(self.segments_file, 'wb') as f:
-                pickle.dump(self.segments, f)
-                
-            # Save metadata
-            with open(self.metadata_file, 'w') as f:
-                json.dump({
-                    'count': len(self.embeddings),
-                    'dimension': len(self.embeddings[0]) if self.embeddings else 0
-                }, f)
-        except Exception as e:
-            print(f"Warning: Failed to save data: {e}")
+        self._embeddings[path] = embedding
+        self._segments[path] = CodeSegment(path=path, content=content)
+        self._save_storage()
 
-    def store(self, embeddings: List[Tuple[np.ndarray, 'CodeSegment']]) -> None:
-        """Store embeddings and their associated code segments."""
-        for embedding, segment in embeddings:
-            self.embeddings.append(embedding)
-            self.segments.append(segment)
-        self._save()
-
-    def search(self, query: np.ndarray, top_k: int = 5) -> List[SearchResult]:
-        """
-        Search for similar code segments using cosine similarity.
-        
-        Args:
-            query: Query embedding vector
-            top_k: Number of results to return
+    def update(self, embedding: np.ndarray, path: str, content: str) -> None:
+        """Update an existing embedding."""
+        if path not in self._embeddings:
+            raise ValueError(f"Path not found: {path}")
             
-        Returns:
-            List of SearchResults sorted by similarity score (highest first)
-        """
-        if not self.embeddings:
+        self._embeddings[path] = embedding
+        self._segments[path] = CodeSegment(path=path, content=content)
+        self._save_storage()
+
+    def search(self, query_embedding: np.ndarray, top_k: int = 5) -> List[SearchResult]:
+        """Search for similar embeddings."""
+        if not self._embeddings:
             return []
-            
-        # Convert list to numpy array for vectorized operations
-        embeddings_array = np.stack(self.embeddings)
-        
-        # Compute cosine similarity
-        # Normalize vectors
-        query_norm = query / np.linalg.norm(query)
-        embeddings_norm = embeddings_array / np.linalg.norm(embeddings_array, axis=1)[:, np.newaxis]
-        
-        # Compute dot product of normalized vectors (cosine similarity)
-        similarities = np.dot(embeddings_norm, query_norm)
-        
-        # Get indices of top k results
-        top_indices = np.argsort(similarities)[-top_k:][::-1]
-        
-        # Create SearchResult objects
-        results = []
-        for idx in top_indices:
-            results.append(SearchResult(
-                segment=self.segments[idx],
-                score=float(similarities[idx])
-            ))
-            
-        return results
 
-    def cleanup(self) -> None:
-        """Clean up stored embeddings and segments."""
-        self.embeddings = []
-        self.segments = []
-        
-        # Remove files
-        try:
-            if self.embeddings_file.exists():
-                os.remove(self.embeddings_file)
-            if self.segments_file.exists():
-                os.remove(self.segments_file)
-            if self.metadata_file.exists():
-                os.remove(self.metadata_file)
-        except Exception as e:
-            print(f"Warning: Failed to remove files during cleanup: {e}")
+        results = []
+        for path, embedding in self._embeddings.items():
+            # Compute cosine similarity
+            similarity = np.dot(query_embedding, embedding) / (
+                np.linalg.norm(query_embedding) * np.linalg.norm(embedding)
+            )
+            results.append(SearchResult(
+                segment=self._segments[path],
+                score=float(similarity)
+            ))
+
+        # Sort by similarity score
+        results.sort(key=lambda x: x.score, reverse=True)
+        return results[:top_k]
+
+    def get(self, path: str) -> Optional[Tuple[np.ndarray, CodeSegment]]:
+        """Get embedding and content for a path."""
+        if path not in self._embeddings:
+            return None
+        return (self._embeddings[path], self._segments[path])

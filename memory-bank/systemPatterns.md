@@ -157,3 +157,86 @@ As you explore code:
    - Related documentation
    - Connected components
    - Usage patterns
+
+## Testing Strategy
+
+### Test Data
+Instead of using real codebases, we'll use crafted test data:
+
+1. Knowledge Entries
+```python
+test_knowledge = [
+    {
+        "path": "src/auth/login.py",
+        "summary": "Handles user authentication with JWT tokens. Implements login, logout, and session management.",
+        "metadata": {
+            "type": "file",
+            "last_updated": "2024-02-16",
+            "related": ["auth/session.py", "models/user.py"]
+        }
+    },
+    {
+        "path": "src/auth/",
+        "summary": "Authentication module handling user identity, sessions, and access control.",
+        "metadata": {
+            "type": "directory",
+            "components": ["login.py", "session.py", "permissions.py"]
+        }
+    }
+]
+```
+
+2. Memory Bank Content
+```markdown
+# Test Project Brief
+Authentication system with JWT support...
+
+# Test Active Context
+Currently implementing session management...
+```
+
+### Test Scenarios
+
+1. Knowledge Operations
+```python
+# Adding Knowledge
+add_knowledge("src/auth/login.py", "Authentication handler...")
+
+# Updating Knowledge
+update_knowledge("src/auth/login.py", "Updated auth handler...")
+
+# Searching Knowledge
+results = search_knowledge("authentication jwt")
+```
+
+2. Context Retrieval
+```python
+# Task-specific Context
+context = get_relevant_context("implement password reset")
+
+# Documentation Access
+docs = get_markdown_content("projectbrief.md")
+```
+
+### Test Structure
+1. Unit Tests
+   - Knowledge operations
+   - Context retrieval
+   - RAG functionality
+   - Update mechanisms
+
+2. Integration Tests
+   - End-to-end workflows
+   - Combined operations
+   - Context building
+
+3. Consistency Tests
+   - Update validation
+   - Knowledge integrity
+   - Context relevance
+
+### Test Environment
+- In-memory vector store
+- Predefined test data
+- Controlled context
+- Simulated updates

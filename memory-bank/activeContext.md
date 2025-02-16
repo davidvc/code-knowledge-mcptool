@@ -1,69 +1,69 @@
 # Active Context
 
 ## Current Focus
-Enhancing the memory bank with dynamic features:
+Implementing and testing the memory bank:
 
-1. Knowledge Management
-   - Supporting knowledge updates
-   - RAG-based context retrieval
-   - Specialized instructions
-   - Efficient token usage
+1. Testing Strategy
+   - Using crafted test data
+   - Testing core MCP operations
+   - Focusing on knowledge management
+   - Validating RAG retrieval
 
-2. Update Mechanisms
-   - Semantic change detection
-   - User-requested re-evaluation
-   - Consistency maintenance
-   - History preservation
+2. Test Implementation
+   - Creating test fixtures
+   - Building test scenarios
+   - Implementing test cases
+   - Setting up test environment
 
-3. Context Optimization
-   - Task-specific retrieval
-   - Focused documentation access
-   - Token usage efficiency
-   - Relevant context selection
+3. Core Functionality
+   - Knowledge operations
+   - Context retrieval
+   - Update mechanisms
+   - RAG integration
 
 ## Recent Changes
-- Added knowledge update capability
-- Implemented RAG-based context retrieval
-- Designed specialized instructions
-- Moved to project-local storage
+- Shifted to crafted test data approach
+- Removed sample codebase dependencies
+- Designed test scenarios
+- Focused on core MCP operations
 
 ## Next Steps
-1. Implement Update System
-   - Knowledge update interface
-   - Change detection mechanisms
-   - History tracking
-   - Consistency checks
+1. Create Test Environment
+   - Set up in-memory vector store
+   - Create test fixtures
+   - Define test data
+   - Build test helpers
 
-2. RAG Integration
-   - Context retrieval system
-   - Relevance scoring
-   - Documentation indexing
-   - Efficient access patterns
+2. Implement Test Cases
+   - Knowledge operation tests
+   - Context retrieval tests
+   - Update mechanism tests
+   - Integration tests
 
-3. Instruction Development
-   - Create specialized prompts
-   - Define update triggers
-   - Set context patterns
-   - Guide knowledge building
+3. Clean Up Legacy Code
+   - Remove indexing tools
+   - Clean up sample codebases
+   - Update documentation
+   - Refocus tooling
 
 ## Active Decisions
-1. Supporting dynamic updates
-2. Using RAG for context
-3. Storing specialized instructions
-4. Maintaining knowledge history
-5. Focusing on efficiency
+1. Using crafted test data
+2. Focusing on core operations
+3. Testing in isolation
+4. Simulating updates
+5. Controlled test environment
 
 ## Current Challenges
-1. Change detection accuracy
-2. Update consistency
-3. Context relevance
-4. Token optimization
-5. Instruction effectiveness
+1. Test data design
+2. Operation validation
+3. Context simulation
+4. Update verification
+5. Integration testing
 
 ## Implementation Progress
-- [x] Design update mechanisms
-- [x] Plan RAG integration
-- [x] Define instruction approach
-- [ ] Implement update system
-- [ ] Build RAG retrieval
-- [ ] Create instruction set
+- [x] Design test strategy
+- [x] Define test scenarios
+- [ ] Create test environment
+- [ ] Implement test cases
+- [ ] Remove legacy code
+- [ ] Update tooling

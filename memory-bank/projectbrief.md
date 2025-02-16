@@ -1,7 +1,7 @@
 # Project Brief: Chat with Code Repository Tool
 
 ## Core Mission
-Create a Python-based tool that enables conversational interaction with local code repositories through vector embeddings, exposed as an MCP tool for Cline integration.
+Create a Python-based tool that enables conversational interaction with local code repositories through vector embeddings, exposed as an MCP tool for Cline and RooCode integration.
 
 ## Key Requirements
 
@@ -9,7 +9,7 @@ Create a Python-based tool that enables conversational interaction with local co
 - Local file system repository access
 - Local embedding engine (Ollama with Llama-3)
 - Local vector database (Chroma)
-- MCP tool integration with Cline
+- MCP tool integration with Cline and RooCode
 
 ### Technical Scope
 - Language: Python 3.8+
@@ -26,8 +26,8 @@ Create a Python-based tool that enables conversational interaction with local co
 - Support repositories up to 100MB in size
 
 ## Success Criteria
-1. Successfully loads and indexes local code repositories
-2. Generates meaningful embeddings via local Ollama service
-3. Efficiently stores and queries vectors via local Chroma
-4. Seamlessly integrates with Cline via MCP protocol
+1. Allows Cline and RooCode to incrementally add knowledge about a codebase to it's memory bank db
+2. Allows the memory bank of the project requirements and status to not have to be included in 
+   every LLM query. Instead it can pick the context it needs out of the memory bank db and include
+   that in the query.
 5. Provides clear, relevant responses to code queries
