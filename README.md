@@ -30,18 +30,21 @@ This will create two files in the dist/ directory:
 
 ### 2. Install the Package
 
-There are two ways to install the built package:
+#### Prerequisites
 
-#### Option 1: Install from wheel file (recommended for usage)
+1. Ensure Ollama is installed and running:
+```bash
+# Install Ollama (if not already installed)
+curl https://ollama.ai/install.sh | sh
 
-1. First, install PyTorch according to your system requirements:
-   - Visit [PyTorch Installation](https://pytorch.org/get-started/locally/) to get the correct command for your system
-   - For example, on macOS with pip:
-     ```bash
-     pip install torch
-     ```
+# Start Ollama service
+ollama serve
+```
 
-2. Install the code knowledge tool from the wheel file:
+2. Install the package:
+
+##### Option 1: Install from wheel file (recommended for usage)
+
 ```bash
 # Navigate to where you built the package
 cd /path/to/code_knowledge_tool
@@ -50,16 +53,13 @@ cd /path/to/code_knowledge_tool
 pip install dist/code_knowledge_tool-0.1.0-py3-none-any.whl
 ```
 
-#### Option 2: Install in editable mode (recommended for development)
+##### Option 2: Install in editable mode (recommended for development)
 
 This option is best if you want to modify the tool or contribute to its development:
 
 ```bash
 # Assuming you're already in the code-knowledge-tool directory
 # and have activated your virtual environment
-
-# Install PyTorch first
-pip install torch
 
 # Install in editable mode with development dependencies
 pip install -e ".[dev]"
@@ -83,8 +83,7 @@ Add this configuration:
       "command": "python",
       "args": ["-m", "code_knowledge_tool.mcp_tool"],
       "env": {
-        "PYTHONPATH": "${workspaceFolder}",
-        "SENTENCE_TRANSFORMERS_HOME": "${userHome}/.cache/sentence-transformers"
+        "PYTHONPATH": "${workspaceFolder}"
       }
     }
   }
@@ -122,30 +121,59 @@ See clinerules_template.md for the full configuration and usage details.
 ## Features
 
 - Local vector storage for code knowledge
-- Efficient embedding generation using sentence-transformers
+- Efficient embedding generation using Ollama
 - Support for multiple file types
 - Context-aware code understanding
 - Integration with RooCode and Cline via MCP
 - RAG-based context augmentation
+- Persistent knowledge storage
 
 ## Requirements
 
-- Python 3.8-3.13
-- PyTorch (installed separately)
-- sentence-transformers
+- Python 3.8 or higher
+- Ollama service running locally
 - chromadb for vector operations
 
 ## Development
 
 ### Running Tests
 
+The project follows an integration-first testing approach, focusing on end-to-end functionality and MCP contract compliance. The test suite consists of:
+
+1. MCP Contract Tests
+   - Tool registration and execution
+   - Resource management
+   - Knowledge operations
+   - Error handling
+
+2. Package Build Tests
+   - Installation verification
+   - Dependency resolution
+   - MCP server initialization
+   - Basic functionality
+
+To run the tests:
 ```bash
 # Install test dependencies
 pip install -e ".[dev]"
 
-# Run tests
+# Run all tests
 pytest
+
+# Run specific test suites
+pytest tests/integration/test_mcp_contract.py -v  # MCP functionality
+pytest tests/integration/test_package_build.py -v  # Installation verification
 ```
+
+Test Environment Requirements:
+```bash
+# Ensure Ollama is running
+ollama serve
+```
+
+The tests use a temporary directory (test_knowledge_store) that is cleaned up automatically between test runs.
+
+For more details on the testing strategy and patterns, see the documentation in `docs/`.
 
 ## Future Distribution
 

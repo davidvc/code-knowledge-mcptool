@@ -1,139 +1,121 @@
-"""MCP tool implementation for code knowledge management functionality."""
+"""MCP server implementation for code knowledge management."""
+import json
+import logging
+from typing import AsyncIterator, Dict, Any, List, Optional
 from pathlib import Path
-from typing import List, Optional, Dict, Any
-import numpy as np
-from dataclasses import dataclass
+import mcp.server.stdio
+import mcp.types as types
+from mcp.server import Server
+from pydantic import AnyUrl
 
-from .embedding import SentenceTransformerEmbedder
-from .vector_store import VectorStore, SearchResult
+from .embedding import OllamaEmbedder
+from .vector_store import PersistentVectorStore
+from .tool_handlers import TOOL_HANDLERS, ToolHandler
 
-@dataclass
-class KnowledgeEntry:
-    """Represents a piece of knowledge about code."""
-    path: str
-    summary: str
-    metadata: Dict[str, Any]
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-@dataclass
-class ContextEntry:
-    """Represents a relevant context entry."""
-    path: str
-    content: str
-    relevance: float
+APP_NAME = "code_knowledge_tool"
 
-class CodeKnowledgeTool:
-    """MCP tool for managing code knowledge."""
+async def serve(storage_dir: Optional[Path] = None) -> Server:
+    """Create and configure the MCP server."""
+    server = Server(APP_NAME)
     
-    def __init__(
-        self,
-        embedder: SentenceTransformerEmbedder,
-        vector_store: VectorStore
-    ):
-        """Initialize the knowledge tool.
-        
-        Args:
-            embedder: Component for generating embeddings
-            vector_store: Component for storing and searching knowledge
-        """
-        self.embedder = embedder
-        self.vector_store = vector_store
-        self._path_to_metadata = {}  # Cache for path -> metadata mapping
+    # Initialize components
+    embedder = OllamaEmbedder(base_url="http://localhost:11434")
+    vector_store = PersistentVectorStore(
+        storage_dir=storage_dir or Path("knowledge_store")
+    )
+    
+    # Initialize handlers
+    handlers: Dict[str, ToolHandler] = {
+        name: handler_cls(embedder, vector_store)
+        for name, handler_cls in TOOL_HANDLERS.items()
+    }
+    
+    @server.list_resources()
+    async def list_resources() -> list[types.Resource]:
+        """List available knowledge resources."""
+        try:
+            # Get all stored knowledge entries
+            resources = []
+            for path, entry in vector_store._segments.items():
+                resources.append(
+                    types.Resource(
+                        uri=f"knowledge://{path}",
+                        name=path,
+                        mimeType="text/markdown",
+                        description="Knowledge entry"
+                    )
+                )
+            return resources
+        except Exception as e:
+            logger.error(f"Error listing resources: {str(e)}")
+            return []
 
-    def add_knowledge(self, path: str, summary: str, metadata: Dict[str, Any]) -> None:
-        """Add new knowledge about code.
-        
-        Args:
-            path: Path to the code component
-            summary: Semantic summary of the code
-            metadata: Additional information about the code
+    @server.read_resource()
+    async def read_resource(uri: AnyUrl) -> str:
+        """Read a specific knowledge resource."""
+        try:
+            if uri.scheme != "knowledge":
+                raise ValueError(f"Invalid resource scheme: {uri.scheme}")
             
-        Raises:
-            ValueError: If path is empty or knowledge already exists
-        """
-        if not path:
-            raise ValueError("Path cannot be empty")
+            path = uri.path.lstrip("/")
+            entry = vector_store.get(path)
             
-        if path in self._path_to_metadata:
-            raise ValueError(f"Knowledge already exists for {path}")
-            
-        # Create embedding for the summary
-        embedding = self.embedder.embed_text(summary)
-        
-        # Store the knowledge
-        self.vector_store.add(embedding, path, summary)
-        self._path_to_metadata[path] = metadata
+            if not entry:
+                raise ValueError(f"Resource not found: {path}")
+                
+            return json.dumps({
+                "content": entry[1].content,
+                "metadata": entry[1].metadata
+            })
+        except Exception as e:
+            logger.error(f"Error reading resource: {str(e)}")
+            return json.dumps({"error": str(e)})
 
-    def update_knowledge(self, path: str, new_summary: str, metadata: Dict[str, Any]) -> None:
-        """Update existing knowledge about code.
-        
-        Args:
-            path: Path to the code component
-            new_summary: Updated semantic summary
-            metadata: Updated metadata
-            
-        Raises:
-            ValueError: If path doesn't exist
-        """
-        if path not in self._path_to_metadata:
-            raise ValueError(f"No knowledge exists for {path}")
-            
-        # Create embedding for the new summary
-        embedding = self.embedder.embed_text(new_summary)
-        
-        # Update the knowledge
-        self.vector_store.update(embedding, path, new_summary)
-        self._path_to_metadata[path] = metadata
+    @server.list_tools()
+    async def list_tools() -> list[types.Tool]:
+        """List available tools."""
+        return [
+            handler_cls.get_tool_definition()
+            for handler_cls in TOOL_HANDLERS.values()
+        ]
 
-    def search_knowledge(self, query: str) -> List[SearchResult]:
-        """Search for relevant code knowledge.
-        
-        Args:
-            query: Natural language query
-            
-        Returns:
-            List of search results with similarity scores
-        """
-        # Generate embedding for query
-        query_embedding = self.embedder.embed_text(query)
-        
-        # Search for similar knowledge
-        results = self.vector_store.search(query_embedding)
-        
-        # Filter results with low similarity
-        return [r for r in results if r.score > 0.3]
+    @server.call_tool()
+    async def call_tool(
+        name: str, arguments: dict
+    ) -> list[types.TextContent | types.ImageContent]:
+        """Execute a tool with the given arguments."""
+        try:
+            handler = handlers.get(name)
+            if not handler:
+                raise ValueError(f"Unknown tool: {name}")
+                
+            return await handler.handle(arguments)
+                
+        except Exception as e:
+            logger.error(f"Error executing tool {name}: {str(e)}")
+            return [types.TextContent(
+                type="text",
+                text=json.dumps({
+                    "error": str(e),
+                    "tool": name
+                })
+            )]
+    
+    return server
 
-    def get_relevant_context(self, task: str) -> List[ContextEntry]:
-        """Get relevant context for a task.
-        
-        Args:
-            task: Description of the task
-            
-        Returns:
-            List of relevant context entries
-        """
-        # Get all results without filtering
-        query_embedding = self.embedder.embed_text(task)
-        results = self.vector_store.search(query_embedding, top_k=10)
-        
-        # Convert to context entries
-        context = []
-        for result in results:
-            # Include even lower similarity results for context
-            context.append(ContextEntry(
-                path=result.segment.path,
-                content=result.segment.content,
-                relevance=result.score
-            ))
-            
-        return context
+async def main():
+    """Run the MCP server."""
+    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+        server = await serve()
+        await server.run(
+            read_stream,
+            write_stream,
+            server.create_initialization_options()
+        )
 
-    def get_metadata(self, path: str) -> Optional[Dict[str, Any]]:
-        """Get metadata for a path.
-        
-        Args:
-            path: Path to get metadata for
-            
-        Returns:
-            Metadata dictionary or None if not found
-        """
-        return self._path_to_metadata.get(path)
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

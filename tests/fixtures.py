@@ -1,92 +1,95 @@
-"""Test fixtures for memory bank testing."""
-from typing import Dict, List
+"""Test fixtures and helper functions."""
+import json
+from typing import Any, Dict, List
+import mcp.types as types
+from pathlib import Path
 
-# Sample knowledge entries for testing
-TEST_KNOWLEDGE = [
-    {
-        "path": "src/auth/login.py",
-        "summary": "Handles user authentication with JWT tokens. Implements login, logout, and session management.",
+# Test storage directory
+TEST_STORAGE_DIR = Path("test_knowledge_store")
+
+# Test knowledge examples
+TEST_KNOWLEDGE = {
+    "active_context": {
+        "path": "memory-bank/activeContext.md",
+        "content": """
+# Active Context
+
+## Current Focus
+Integration testing with focus on MCP functionality:
+- Single comprehensive integration test suite
+- Focus on MCP tool functionality
+- Testing real-world usage scenarios
+""",
         "metadata": {
-            "type": "file",
-            "last_updated": "2024-02-16",
-            "related": ["auth/session.py", "models/user.py"]
+            "type": "memory_bank",
+            "category": "active_context",
+            "last_updated": "2024-02-17"
         }
     },
-    {
-        "path": "src/auth/",
-        "summary": "Authentication module handling user identity, sessions, and access control.",
+    "system_patterns": {
+        "path": "memory-bank/systemPatterns.md",
+        "content": """
+# System Patterns
+
+## Memory Bank Architecture
+The memory bank combines two complementary storage approaches:
+1. Vector Database (ChromaDB)
+2. Markdown Documentation
+""",
         "metadata": {
-            "type": "directory",
-            "components": ["login.py", "session.py", "permissions.py"]
-        }
-    },
-    {
-        "path": "src/models/user.py",
-        "summary": "User model with profile management, permissions, and authentication state.",
-        "metadata": {
-            "type": "file",
-            "last_updated": "2024-02-16",
-            "related": ["auth/login.py", "models/profile.py"]
-        }
-    },
-    {
-        "path": "src/auth/session.py",
-        "summary": "Session management implementation with timeout handling and token refresh.",
-        "metadata": {
-            "type": "file",
-            "last_updated": "2024-02-16",
-            "related": ["auth/login.py"]
+            "type": "memory_bank",
+            "category": "architecture",
+            "status": "current"
         }
     }
-]
-
-# Sample memory bank markdown content
-TEST_MARKDOWN = {
-    "projectbrief.md": """# Test Project Brief
-Authentication system implementing secure user management with JWT support.
-Features include:
-- User authentication
-- Session management
-- Access control
-- Profile management""",
-
-    "activeContext.md": """# Test Active Context
-Currently implementing session management with focus on:
-- JWT token handling
-- Session timeouts
-- Refresh token logic""",
-
-    "systemPatterns.md": """# Test System Patterns
-Authentication follows these patterns:
-- JWT-based authentication
-- Role-based access control
-- Stateless session management"""
 }
 
-# Test queries and expected matches
-TEST_QUERIES = [
-    {
-        "query": "authentication jwt",
-        "expected_paths": ["src/auth/login.py", "src/auth/"]
-    },
-    {
-        "query": "user profile",
-        "expected_paths": ["src/models/user.py"]
-    },
-    {
-        "query": "session management",
-        "expected_paths": ["src/auth/login.py", "src/auth/"]
-    }
-]
+def assert_tool_response(
+    result: List[types.TextContent | types.ImageContent],
+    expected_data: Dict[str, Any] = None,
+    expect_error: bool = False
+) -> Dict[str, Any]:
+    """Assert tool response format and return parsed data."""
+    assert len(result) == 1
+    assert result[0].type == "text"
+    
+    data = json.loads(result[0].text)
+    
+    if expect_error:
+        assert "error" in data
+    else:
+        assert "error" not in data
+        if expected_data:
+            for key, value in expected_data.items():
+                assert data[key] == value
+    
+    return data
 
-# Test tasks and expected context
-TEST_TASKS = [
-    {
-        "task": "implement password reset",
-        "expected_context": ["src/auth/login.py", "src/models/user.py"]
-    },
-    {
-        "task": "add session timeout",
-        "expected_context": ["src/auth/login.py", "src/auth/session.py"]
-    }
-]
+def assert_resource_content(
+    content: str,
+    expected_content: str,
+    expected_metadata: Dict[str, Any]
+) -> None:
+    """Assert resource content matches expectations."""
+    data = json.loads(content)
+    assert data["content"] == expected_content
+    assert data["metadata"] == expected_metadata
+
+def assert_storage_exists() -> None:
+    """Assert storage files exist."""
+    assert TEST_STORAGE_DIR.exists()
+    assert (TEST_STORAGE_DIR / "embeddings.npy").exists()
+    assert (TEST_STORAGE_DIR / "segments.json").exists()
+
+async def add_test_knowledge(server, entries: Dict[str, Dict] = None) -> None:
+    """Add test knowledge entries to server."""
+    entries = entries or TEST_KNOWLEDGE
+    for entry in entries.values():
+        await server.call_tool(
+            "add_knowledge",
+            {
+                "path": entry["path"],
+                "content": entry["content"],
+                "metadata": entry["metadata"]
+            }
+        )

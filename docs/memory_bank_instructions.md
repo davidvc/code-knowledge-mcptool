@@ -2,11 +2,12 @@
 
 ## Overview
 
-You have access to a memory bank MCP tool that helps you store and retrieve knowledge about code. This tool allows you to:
-1. Store summaries of code you examine
-2. Update knowledge when code changes
-3. Find relevant code for tasks
-4. Access context efficiently
+You have access to a memory bank MCP server that helps you store and retrieve knowledge about code. This server provides tools to:
+1. Store and manage knowledge entries
+2. Search for relevant information
+3. Get context for tasks
+4. Update existing knowledge
+5. List available entries
 
 ## When to Store Knowledge
 
@@ -17,16 +18,24 @@ Store knowledge when you:
 4. Understand implementation details
 
 Example knowledge entry:
-```python
-add_knowledge(
-    path="src/auth/login.py",
-    summary="Authentication handler implementing JWT-based login/logout. Uses bcrypt for password hashing and includes session management.",
-    metadata={
+```json
+// Tool: add_knowledge
+{
+    "path": "src/auth/login.py",
+    "content": "Authentication handler implementing JWT-based login/logout. Uses bcrypt for password hashing and includes session management.",
+    "metadata": {
         "type": "file",
+        "category": "authentication",
+        "last_updated": "2024-02-17",
         "related": ["auth/session.py", "models/user.py"],
         "patterns": ["JWT authentication", "Password hashing"]
     }
-)
+}
+
+// Response
+{
+    "success": true
+}
 ```
 
 ## When to Update Knowledge
@@ -38,97 +47,151 @@ Update knowledge when:
 4. The user requests re-evaluation
 
 Example update:
-```python
-update_knowledge(
-    path="src/auth/login.py",
-    new_summary="Enhanced authentication handler with OAuth support and rate limiting.",
-    metadata={
+```json
+// Tool: update_knowledge
+{
+    "path": "src/auth/login.py",
+    "content": "Enhanced authentication handler with OAuth support and rate limiting.",
+    "metadata": {
         "type": "file",
+        "category": "authentication",
+        "last_updated": "2024-02-18",
         "related": ["auth/session.py", "models/user.py", "auth/oauth.py"],
         "patterns": ["OAuth", "Rate limiting", "JWT authentication"]
     }
-)
+}
+
+// Response
+{
+    "success": true
+}
 ```
 
-## How to Generate Summaries
+## How to Generate Content
 
-When creating summaries:
+When creating content:
 1. Focus on functionality and purpose
 2. Identify key patterns and relationships
 3. Note important dependencies
 4. Keep descriptions concise but informative
 
-Good summary examples:
-```
-✓ "User authentication service handling login, session management, and access control. Implements JWT tokens and integrates with OAuth providers."
+Good content examples:
+```markdown
+✓ # Authentication Service
+   Handles user authentication with JWT tokens and OAuth integration.
+   Includes session management and access control.
+   Integrates with multiple OAuth providers.
 
-✓ "Core data validation module providing schema validation, sanitization, and type checking. Used across all data input paths."
+✓ # Data Validation Module
+   Core validation system providing schema validation and sanitization.
+   Used across all data input paths.
+   Implements type checking and custom validators.
 
-✓ "Background job processing system using Redis for queue management. Handles task scheduling, retries, and error reporting."
+✓ # Background Processing
+   Job processing system using Redis queues.
+   Handles task scheduling, retries, and reporting.
+   Implements error recovery and monitoring.
 ```
 
 ## How to Find Relevant Code
 
 When you need to find code:
 1. Describe what you're looking for in natural language
-2. Use the search_knowledge function
+2. Use the search_knowledge tool
 3. Consider the context of your task
 4. Look for related components
 
 Example searches:
-```python
-# Finding authentication code
-results = search_knowledge("user authentication and session management")
+```json
+// Tool: search_knowledge
+{
+    "query": "user authentication and session management",
+    "limit": 5
+}
 
-# Looking for data validation
-results = search_knowledge("input validation and sanitization")
-
-# Finding specific patterns
-results = search_knowledge("background job processing with Redis")
+// Response
+{
+    "results": [
+        {
+            "path": "src/auth/login.py",
+            "content": "Authentication handler implementing JWT...",
+            "score": 0.92
+        },
+        {
+            "path": "src/auth/session.py",
+            "content": "Session management system...",
+            "score": 0.85
+        }
+    ]
+}
 ```
 
 ## Getting Task Context
 
 When starting a task:
-1. Use get_relevant_context to find related code
-2. Consider all returned components
+1. Use get_context to find related knowledge
+2. Consider all returned entries
 3. Look for relationships between components
 4. Use metadata for additional context
 
 Example:
-```python
-# Starting a password reset feature
-context = get_relevant_context("implement password reset functionality")
-for entry in context:
-    print(f"Relevant file: {entry.path}")
-    print(f"Summary: {entry.content}")
-    print(f"Relevance: {entry.relevance}")
+```json
+// Tool: get_context
+{
+    "task": "implement password reset functionality",
+    "limit": 3
+}
+
+// Response
+{
+    "context": [
+        {
+            "path": "src/auth/login.py",
+            "content": "Authentication handler...",
+            "relevance": 0.95
+        },
+        {
+            "path": "src/auth/password.py",
+            "content": "Password management...",
+            "relevance": 0.88
+        }
+    ]
+}
 ```
+
+## Storage and Persistence
+
+Knowledge is stored persistently in your repository so you can use it across sessions as a persistent
+store of knowledge about the project and the code base.
 
 ## Best Practices
 
 1. Knowledge Storage
-   - Store clear, focused summaries
+   - Store clear, focused content
    - Include important relationships
    - Note implementation patterns
    - Keep metadata current
+   - Use consistent formatting
 
 2. Knowledge Updates
    - Update promptly when code changes
    - Maintain relationship information
    - Preserve important patterns
    - Track evolution of components
+   - Version metadata appropriately
 
 3. Knowledge Retrieval
    - Use specific search terms
    - Consider task context
    - Look for related components
    - Check metadata for insights
+   - Leverage similarity search
 
 4. Context Management
    - Pull relevant documentation
    - Focus on task-specific needs
    - Consider component relationships
    - Use metadata effectively
+   - Track knowledge evolution
 
-Remember: Building and maintaining this knowledge base helps you understand the codebase better and makes your assistance more effective.
+Remember: The knowledge base is persistent and can be checked into your repository, helping maintain a shared understanding of the codebase across the team.

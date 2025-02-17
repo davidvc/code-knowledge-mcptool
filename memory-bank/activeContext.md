@@ -1,69 +1,65 @@
 # Active Context
 
 ## Current Focus
-Implementing and testing the memory bank:
+Integration testing and MCP functionality:
 
-1. Testing Strategy
-   - Using crafted test data
-   - Testing core MCP operations
-   - Focusing on knowledge management
-   - Validating RAG retrieval
+1. Test Organization
+   - Integration tests for MCP contract
+   - Package build verification
+   - Shared test fixtures and helpers
+   - No unit tests (by design)
 
-2. Test Implementation
-   - Creating test fixtures
-   - Building test scenarios
-   - Implementing test cases
-   - Setting up test environment
+2. Test Strategy
+   - Test functionality through MCP contract to enable easier refactoring. No unit tests.
+   - Test MCP contract compliance
+   - Verify installation process
+   - Clean test environment between runs
 
-3. Core Functionality
-   - Knowledge operations
-   - Context retrieval
-   - Update mechanisms
-   - RAG integration
+3. Core Test Areas
+   - Knowledge operations through MCP
+   - Resource management
+   - Tool registration and execution
+   - Error handling
+   - Storage persistence
 
 ## Recent Changes
-- Shifted to crafted test data approach
-- Removed sample codebase dependencies
-- Designed test scenarios
-- Focused on core MCP operations
+- Consolidated test suite to focus on integration tests
+- Removed outdated test implementations
+- Enhanced package build verification
+- Added MCP server verification
+- Improved test organization
 
 ## Next Steps
-1. Create Test Environment
-   - Set up in-memory vector store
-   - Create test fixtures
-   - Define test data
-   - Build test helpers
+1. Storage Implementation
+   - Implement persistent storage
+   - Add storage verification
+   - Test data persistence
+   - Document storage format
 
-2. Implement Test Cases
-   - Knowledge operation tests
-   - Context retrieval tests
-   - Update mechanism tests
-   - Integration tests
-
-3. Clean Up Legacy Code
-   - Remove indexing tools
-   - Clean up sample codebases
-   - Update documentation
-   - Refocus tooling
+2. Documentation Updates
+   - Update README
+   - Document test strategy
+   - Update installation guide
+   - Document MCP usage
 
 ## Active Decisions
-1. Using crafted test data
-2. Focusing on core operations
-3. Testing in isolation
-4. Simulating updates
-5. Controlled test environment
+1. Integration test focus
+2. Using Ollama for embeddings
+3. Persistent knowledge storage
+4. MCP-based interface
+5. Clean test environment
 
 ## Current Challenges
-1. Test data design
-2. Operation validation
-3. Context simulation
-4. Update verification
-5. Integration testing
+1. Storage implementation
+2. Test environment setup
+3. Documentation updates
+4. Installation verification
+5. Error handling
 
 ## Implementation Progress
-- [x] Design test strategy
-- [x] Define test scenarios
-- [ ] Create test environment
-- [ ] Implement test cases
-- [ ] Remove legacy code
-- [ ] Update tooling
+- [x] Create MCP contract tests
+- [x] Setup test infrastructure
+- [x] Implement test helpers
+- [x] Add package verification
+- [ ] Implement persistent storage
+- [ ] Update documentation

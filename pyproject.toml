@@ -6,16 +6,14 @@ build-backend = "hatchling.build"
 name = "code-knowledge-tool"
 version = "0.1.0"
 description = "Knowledge management tool for code repositories using vector embeddings"
-requires-python = ">=3.8,<3.14"
+requires-python = ">=3.8,<3.12"  # PyTorch currently supports up to Python 3.11
 dependencies = [
     "chromadb",
     "httpx",
-    "pydantic",
+    "pydantic>=2.0.0",
     "typing-extensions",
-    "sentence-transformers>=2.0.0",
-    "transformers==4.41.0",
-    "tokenizers>=0.10.3",
-    "numpy<2.0.0"  # Downgrade to ensure compatibility with existing modules
+    "numpy<2.0.0",  # Downgrade to ensure compatibility with existing modules
+    "modelcontextprotocol>=0.1.0"  # MCP SDK
 ]
 
 [project.optional-dependencies]
@@ -24,10 +22,11 @@ dev = [
     "pytest-cov",
     "black",
     "mypy",
-    "ruff"
-]
-torch = [
-    "torch>=1.11.0"
+    "ruff",
+    "pytest-asyncio"  # For async test support
+],
+ollama = [
+    "httpx>=0.24.0"  # For Ollama API support
 ]
 
 [tool.hatch.build.targets.wheel]

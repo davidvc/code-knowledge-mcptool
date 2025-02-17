@@ -1,87 +1,133 @@
-# Chat with Code Repository Tool Requirements
+# Code Knowledge Tool Requirements
 
 ## Overview
-A tool that enables conversational interaction with code repositories through a local vector database and embedding engine, exposed as an MCP tool.
+A tool that manages and provides access to code knowledge through a local vector database and embedding engine, exposed as an MCP server.
 
 ## Core Requirements
 
-### 1. Repository Source Support
-- Must support loading code from:
-  - Local file system directories
-  - GitHub repositories (optional)
-- Directory/repository scanning should:
-  - Handle all common code file types
-  - Respect .gitignore patterns
-  - Support recursive directory traversal
+### 1. Knowledge Source Support
+- Must support storing knowledge from:
+  - Memory bank files (markdown)
+  - Code documentation
+  - Project summaries
+  - Design decisions
+- Knowledge management should:
+  - Support markdown formatting
+  - Handle metadata
+  - Enable updates and evolution
+  - Maintain consistency
 
 ### 2. Local Infrastructure
 - Vector Database:
-  - Use Chroma as the vector database
-  - Store in temporary directories for each session
+  - Use ChromaDB as the vector database
+  - Store in persistent repository location
   - Support efficient similarity search
+  - Handle metadata storage
   
 - Embedding Engine:
-  - Use local Ollama with Llama-3 model
-  - Support configurable base URL for Ollama service
+  - Use local Ollama service
+  - Support configurable base URL
   - Maintain consistent embedding dimensions
+  - Handle batch operations
 
-### 3. MCP Tool Integration
+### 3. MCP Server Integration
 - Tool Registration:
-  - Register as "chat_with_code" MCP tool
-  - Accept JSON input parameters
-  - Return text responses
-  
-- Required Parameters:
-  - source_path: Path to local directory OR GitHub repository URL
-  - question: The user's query about the code
-  - github_token: (Optional) Only required for GitHub repositories
-  - base_url: (Optional) Ollama service URL, defaults to http://localhost:11434
+  - Register as "code_knowledge_tool" MCP server
+  - Expose multiple tools for different operations
+  - Support resource access
+  - Handle async operations
+
+- Available Tools:
+  - add_knowledge: Add new knowledge entries
+  - search_knowledge: Search existing knowledge
+  - get_context: Get relevant context for tasks
+  - list_knowledge: List available entries
+  - update_knowledge: Update existing entries
+
+- Resource Access:
+  - URI format: knowledge://{path}
+  - Support reading knowledge entries
+  - List available resources
+  - Handle metadata
 
 ### 4. Performance Requirements
-- Response time: < 5 seconds for typical queries
-- Memory usage: < 1GB for typical repositories
-- Support repositories up to 100MB in size
+- Response time: < 3 seconds for typical operations
+- Memory usage: < 500MB for typical usage
+- Support knowledge bases up to 1GB in size
+- Efficient batch operations
 
 ### 5. Error Handling
 - Clear error messages for:
-  - Invalid repository paths
-  - Missing GitHub tokens
-  - Ollama service connection issues
+  - Invalid knowledge paths
+  - Duplicate entries
+  - Ollama service issues
   - Embedding generation failures
   - Vector database errors
+  - Resource access failures
 
 ## Technical Requirements
 
 ### Dependencies
-- embedchain[github]: For repository loading and RAG functionality
 - chromadb: For vector database operations
+- modelcontextprotocol: For MCP server implementation
 - Required Python version: 3.8+
+- Ollama service: For embedding generation
+
+### Storage
+- Persistent storage for knowledge entries
+- Vector database persistence
+- Clean environment for testing
+- Configurable storage location
 
 ### Configuration
-- No persistent configuration required
-- All settings passed through MCP tool parameters
-- Support for environment variables for sensitive data
+- Storage directory configuration
+- Ollama service URL configuration
+- Support for environment variables
+- MCP server settings
 
 ### Security
-- No persistent storage of repository content
-- Temporary vector databases cleaned up after use
-- GitHub tokens handled securely
-- Local file system access limited to specified directories
+- Local file system access control
+- Resource URI validation
+- Input sanitization
+- Error isolation
 
 ## Integration Requirements
 
 ### MCP Server
-- Tool registration in MCP settings
-- Standard JSON input/output interface
+- Async operation support
+- Standard tool registration
+- Resource management
 - Error reporting through MCP protocol
 
 ### Local Environment
-- Ollama service must be running and accessible
-- Sufficient disk space for temporary vector databases
-- Adequate memory for embedding operations
+- Ollama service must be running
+- Sufficient disk space for storage
+- Adequate memory for operations
+- Clean test environment
+
+## Testing Requirements
+
+### Integration Testing
+- MCP contract verification
+- Tool functionality testing
+- Resource access testing
+- Error handling verification
+
+### Package Testing
+- Installation verification
+- Dependency resolution
+- Server initialization
+- Basic functionality
+
+### Test Environment
+- Isolated storage directory
+- Clean environment between tests
+- Ollama service availability
+- Resource cleanup
 
 ## Future Considerations
-- Support for additional repository sources (GitLab, Bitbucket)
-- Caching mechanism for frequently accessed repositories
-- Support for repository updates/changes
-- Advanced query capabilities (code search, function finding)
+- Enhanced search capabilities
+- Improved context retrieval
+- Batch operations optimization
+- Advanced metadata handling
+- Caching mechanisms

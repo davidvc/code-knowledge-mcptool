@@ -2,14 +2,14 @@
 Embedding Module for Chat with Code Repository Tool
 
 This module provides functionality to generate embeddings for code segments using
-either sentence-transformers (recommended) or the local Ollama service.
+the local Ollama service.
 """
 
 from typing import List, Tuple, Union
 import sys
+import os
 import httpx
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from code_knowledge_tool.code_parser import CodeSegment
 
 class OllamaEmbedder:
@@ -149,91 +149,5 @@ class OllamaEmbedder:
         Raises:
             ConnectionError: If Ollama service is unavailable
             Exception: For other errors
-        """
-        return self._get_embedding(text)
-
-class SentenceTransformerEmbedder:
-    """Fast and efficient embedding generation using sentence-transformers."""
-    
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        """
-        Initialize the embedder with a sentence-transformer model.
-        
-        Args:
-            model_name: Name of the model to use (default: all-MiniLM-L6-v2)
-        """
-        self.model = SentenceTransformer(model_name)
-        
-    def _get_embedding(self, text: Union[str, List[str]]) -> Union[np.ndarray, List[np.ndarray]]:
-        """
-        Get embeddings using sentence-transformers.
-        
-        Args:
-            text: Single text string or list of text strings to embed
-            
-        Returns:
-            Single numpy array or list of numpy arrays containing embedding vectors
-        """
-        # sentence-transformers handles batching internally
-        embeddings = self.model.encode(
-            text,
-            show_progress_bar=False,
-            convert_to_numpy=True,
-            normalize_embeddings=True  # L2 normalize for cosine similarity
-        )
-        
-        # Handle single input case
-        if isinstance(text, str):
-            return embeddings.squeeze()
-        return list(embeddings)
-
-    def embed_segments(self, code_segments: List[CodeSegment], batch_size: int = 32) -> List[Tuple[np.ndarray, CodeSegment]]:
-        """
-        Generate embeddings for a list of CodeSegment objects.
-        
-        Args:
-            code_segments: List of code segments to embed
-            batch_size: Number of segments to process in each batch
-        
-        Returns:
-            List of tuples containing (embedding vector, code segment)
-        """
-        total_segments = len(code_segments)
-        results = []
-        
-        # Process segments in batches
-        for i in range(0, total_segments, batch_size):
-            batch = code_segments[i:i + batch_size]
-            batch_texts = []
-            
-            # Prepare batch texts
-            for segment in batch:
-                context = f"File: {segment.path}\n\nContent:\n{segment.content}"
-                batch_texts.append(context)
-            
-            # Get embeddings for batch
-            batch_embeddings = self._get_embedding(batch_texts)
-            
-            # Pair embeddings with segments
-            for segment, embedding in zip(batch, batch_embeddings):
-                results.append((embedding, segment))
-            
-            # Update progress
-            processed = min(i + batch_size, total_segments)
-            sys.stdout.write(f"\rProcessed {processed}/{total_segments} segments")
-            sys.stdout.flush()
-        
-        sys.stdout.write("\n")
-        return results
-
-    def embed_text(self, text: str) -> np.ndarray:
-        """
-        Generate an embedding for a text query.
-        
-        Args:
-            text: The text to embed
-        
-        Returns:
-            Numpy array containing the embedding vector
         """
         return self._get_embedding(text)
