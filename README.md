@@ -2,11 +2,37 @@
 
 A knowledge management tool for code repositories using vector embeddings. This tool helps maintain and query knowledge about your codebase using advanced embedding techniques.
 
-## Installation
+## Building and Installing
 
-There are two ways to install this tool locally:
+### 1. Build the Package
 
-### Option 1: Install from wheel file (recommended for usage)
+First, you need to build the distribution files:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/code-knowledge-tool.git
+cd code-knowledge-tool
+
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Install build tools
+python -m pip install --upgrade pip build
+
+# Build the package
+python -m build
+```
+
+This will create two files in the dist/ directory:
+- code_knowledge_tool-0.1.0-py3-none-any.whl (wheel file for installation)
+- code_knowledge_tool-0.1.0.tar.gz (source distribution)
+
+### 2. Install the Package
+
+There are two ways to install the built package:
+
+#### Option 1: Install from wheel file (recommended for usage)
 
 1. First, install PyTorch according to your system requirements:
    - Visit [PyTorch Installation](https://pytorch.org/get-started/locally/) to get the correct command for your system
@@ -17,25 +43,20 @@ There are two ways to install this tool locally:
 
 2. Install the code knowledge tool from the wheel file:
 ```bash
-# Navigate to where you downloaded/built the package
+# Navigate to where you built the package
 cd /path/to/code_knowledge_tool
 
 # Install from the wheel file
 pip install dist/code_knowledge_tool-0.1.0-py3-none-any.whl
 ```
 
-### Option 2: Install in editable mode (recommended for development)
+#### Option 2: Install in editable mode (recommended for development)
 
 This option is best if you want to modify the tool or contribute to its development:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/code-knowledge-tool.git
-cd code-knowledge-tool
-
-# Create and activate a virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate
+# Assuming you're already in the code-knowledge-tool directory
+# and have activated your virtual environment
 
 # Install PyTorch first
 pip install torch
@@ -116,24 +137,6 @@ See clinerules_template.md for the full configuration and usage details.
 
 ## Development
 
-### Building the Package
-
-To build the distribution packages:
-```bash
-# Make sure you're in your virtual environment
-source venv/bin/activate
-
-# Install build tools
-pip install --upgrade build
-
-# Build the package
-python -m build
-```
-
-This will create two files in the dist/ directory:
-- A wheel file (.whl) for installing the package
-- A source distribution (.tar.gz) for distribution
-
 ### Running Tests
 
 ```bash
@@ -151,7 +154,7 @@ If you want to make this package available through pip (i.e., `pip install code-
 2. Install twine: `pip install twine`
 3. Upload your distribution: `twine upload dist/*`
 
-However, for now, use the local installation methods described above.
+However, for now, use the local build and installation methods described above.
 
 ## License
 
