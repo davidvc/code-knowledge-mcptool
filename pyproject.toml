@@ -24,7 +24,7 @@ dev = [
     "mypy",
     "ruff",
     "pytest-asyncio"  # For async test support
-],
+]
 ollama = [
     "httpx>=0.24.0"  # For Ollama API support
 ]
