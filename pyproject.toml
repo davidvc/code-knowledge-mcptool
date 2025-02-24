@@ -13,7 +13,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "typing-extensions",
     "numpy<2.0.0",  # Downgrade to ensure compatibility with existing modules
-    "modelcontextprotocol>=0.1.0"  # MCP SDK
+    "mcp>=0.1.0"  # MCP SDK
 ]
 
 [project.optional-dependencies]
@@ -24,7 +24,7 @@ dev = [
     "mypy",
     "ruff",
     "pytest-asyncio"  # For async test support
-],
+]
 ollama = [
     "httpx>=0.24.0"  # For Ollama API support
 ]
