@@ -5,35 +5,34 @@
 ### Core Technologies
 - **Language**: Python 3.8-3.11 (PyTorch dependency limits Python version)
 - **Vector Database**: Chroma
-- **Embedding Engine**: sentence-transformers with all-MiniLM-L6-v2
+- **Embedding Engine**: Ollama with Llama-3
 - **Protocol**: MCP (Model Context Protocol)
+- **SDK**: MCP SDK for server implementation
 
 ### Key Dependencies
 ```plaintext
-chromadb             # Vector database operations
-sentence-transformers # Efficient embedding generation
-torch               # Deep learning framework required by sentence-transformers
-transformers        # Hugging Face transformers library
-tokenizers          # Fast tokenization
-httpx               # HTTP client for OpenRouter API
-pydantic            # Data validation
-typing_extensions   # Type hints support
-pytest              # Testing framework
-pytest-cov          # Test coverage
+@modelcontextprotocol/sdk  # MCP SDK for server implementation
+chromadb                   # Vector database operations
+ollama                     # Embedding generation
+httpx                      # HTTP client for API calls
+pydantic                   # Data validation
+typing_extensions          # Type hints support
+pytest                     # Testing framework
+pytest-cov                 # Test coverage
 ```
 
 ### Test Dependencies
 ```plaintext
-openrouter-client # OpenRouter API integration
 pytest-env        # Environment variable management
 pytest-asyncio    # Async test support
+pytest-mock       # Mocking support
 ```
 
 ## Development Environment
 - Local development setup
-- Python virtual environment recommended
-- No external services required
-- ~100MB disk space for embedding model (downloaded on first use)
+- Python virtual environment with uv
+- Ollama service required
+- ~100MB disk space for embedding model
 
 ## Technical Constraints
 
@@ -48,30 +47,50 @@ pytest-asyncio    # Async test support
   - Embedding model (~100MB)
 - Adequate RAM for embedding operations
 - No GPU required (CPU-only operation)
+- Running Ollama service
 
 ## Integration Points
 
-### Sentence Transformers
-- Model: all-MiniLM-L6-v2
+### MCP SDK Integration
+- Server implementation
+- Tool registration
+- Resource handling
+- Contract compliance
+
+### Ollama Integration
+- Model: Llama-3
 - Optimized for:
   - Fast embedding generation
   - Efficient batching
   - Low memory usage
-- Local operation with no API calls
+- Local operation with API calls
 
-### MCP Integration
+### MCP Server Configuration
 ```json
 {
-  "tool_name": "chat_with_code",
-  "input_schema": {
-    "source_path": "string",
-    "question": "string",
-    "base_url": "string (optional)"
+  "server": {
+    "name": "code-knowledge-tool",
+    "version": "0.1.0",
+    "capabilities": {
+      "tools": true,
+      "resources": true
+    }
   },
-  "output_schema": {
-    "response": "string",
-    "error": "string (optional)"
-  }
+  "tools": [
+    {
+      "name": "chat_with_code",
+      v
+      "input_schema": {
+        "source_path": "string",
+        "question": "string",
+        "base_url": "string (optional)"
+      },
+      "output_schema": {
+        "response": "string",
+        "error": "string (optional)"
+      }
+    }
+  ]
 }
 ```
 
@@ -84,19 +103,28 @@ pytest-asyncio    # Async test support
 ## Testing Infrastructure
 
 ### Integration Testing
-- Real repository submodules in test/integration/test-repos
-- Response quality validation via OpenRouter API
-- Configurable test settings:
-  ```python
-  OPENROUTER_API_KEY: str  # OpenRouter API key
-  OPENROUTER_MODEL: str    # Model selection (default: google/palm-2-chat-bison)
-  ```
+- Uses TCP/IP transport for testing (not shared memory)
+- MCP contract verification
+- Tool registration testing
+- Resource access validation
+- Network-based communication testing
+- Server implementation testing
+
+### Test Configuration
+```python
+@pytest.fixture
+async def server() -> AsyncIterator[Server]:
+    """Create and yield a test server instance."""
+    server = await serve(storage_dir=TEST_STORAGE_DIR)
+    yield server
+    await server.close()
+```
 
 ### Test Execution
-- Integration tests with real codebases
-- Response quality validation using LLMs
-- Performance benchmarking
-- Security validation
+- Contract compliance tests
+- Tool registration tests
+- Resource access tests
+- Error handling tests
 
 ## Monitoring & Debugging
 - Structured logging
@@ -106,42 +134,35 @@ pytest-asyncio    # Async test support
 
 ## MCP Tools Configuration
 
-### Git Automation Tool
+### Code Knowledge Tool
 ```json
 {
-  "tool_name": "git_automation",
-  "description": "Automates git operations when triggered by specific phrases",
+  "tool_name": "code_knowledge",
+  "description": "Interact with code repositories using natural language",
   "input_schema": {
-    "trigger_phrase": "string",
-    "commit_message": "string (optional)",
-    "push": "boolean (optional, default: true)"
+    "query": "string",
+    "context": "string (optional)",
+    "max_results": "number (optional)"
   },
   "output_schema": {
     "success": "boolean",
-    "message": "string",
-    "git_output": "string"
-  },
-  "trigger_phrases": [
-    "let's check this in",
-    "commit and push changes"
-  ]
+    "results": "array",
+    "error": "string (optional)"
+  }
 }
 ```
 
-### Activation
-When Cline detects phrases like "let's check this in", it should:
-1. Generate a descriptive commit message from recent changes
-2. Execute git add -A
-3. Commit with the generated message
-4. Push to the remote repository
-5. Report success/failure
+### Server Implementation
+When implementing the MCP server:
+1. Register tools and resources
+2. Handle requests asynchronously
+3. Validate inputs/outputs
+4. Manage errors appropriately
+5. Clean up resources
 
 ## Future Technical Considerations
-- Caching mechanisms for embeddings
-- Incremental updates to avoid full reprocessing
-- Alternative embedding models or configurations
-- Enhanced query capabilities
-- Extended git automation features:
-  - Branch management
-  - Conflict resolution
-  - Custom commit message templates
+- Enhanced MCP tool capabilities
+- Additional resource types
+- Improved error handling
+- Better test coverage
+- Performance optimizations

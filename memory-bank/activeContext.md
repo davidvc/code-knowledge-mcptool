@@ -1,65 +1,52 @@
 # Active Context
 
 ## Current Focus
-Integration testing and MCP functionality:
+Development of MCP SDK integration and testing:
 
-1. Test Organization
-   - Integration tests for MCP contract
-   - Package build verification
-   - Shared test fixtures and helpers
-   - No unit tests (by design)
+1. MCP SDK Implementation
+   - Building with MCP SDK
+   - Server implementation
+   - Tool and resource definitions
+   - Contract verification
 
-2. Test Strategy
-   - Test functionality through MCP contract to enable easier refactoring. No unit tests.
-   - Test MCP contract compliance
-   - Verify installation process
-   - Clean test environment between runs
+2. Testing Status
+   - Integration tests in progress
+   - MCP contract tests being developed
+   - Test environment setup
+   - Test coverage expansion
 
-3. Core Test Areas
-   - Knowledge operations through MCP
-   - Resource management
-   - Tool registration and execution
-   - Error handling
-   - Storage persistence
+3. Next Steps
+   - Complete MCP contract tests
+   - Verify server implementation
+   - Test tool registration
+   - Validate resource access
 
 ## Recent Changes
-- Consolidated test suite to focus on integration tests
-- Removed outdated test implementations
-- Enhanced package build verification
-- Added MCP server verification
-- Improved test organization
-
-## Next Steps
-1. Storage Implementation
-   - Implement persistent storage
-   - Add storage verification
-   - Test data persistence
-   - Document storage format
-
-2. Documentation Updates
-   - Update README
-   - Document test strategy
-   - Update installation guide
-   - Document MCP usage
+- Started MCP SDK integration
+- Created test infrastructure
+- Implementing contract tests
+- Setting up test environment
+- Organizing test suite
 
 ## Active Decisions
-1. Integration test focus
-2. Using Ollama for embeddings
-3. Persistent knowledge storage
-4. MCP-based interface
+1. Use MCP SDK for server implementation
+2. Integration-first testing approach
+3. Contract-based testing
+4. Comprehensive test coverage
 5. Clean test environment
 
 ## Current Challenges
-1. Storage implementation
+1. MCP contract verification
 2. Test environment setup
-3. Documentation updates
-4. Installation verification
-5. Error handling
+3. Server implementation
+4. Tool registration testing
+5. Resource access validation
 
 ## Implementation Progress
-- [x] Create MCP contract tests
-- [x] Setup test infrastructure
-- [x] Implement test helpers
-- [x] Add package verification
-- [ ] Implement persistent storage
-- [ ] Update documentation
+- [x] Set up MCP SDK
+- [x] Create test infrastructure
+- [x] Begin contract tests
+- [ ] Complete MCP contract tests
+- [ ] Test tool registration
+- [ ] Verify resource access
+- [ ] Validate server implementation

@@ -1,32 +1,49 @@
 # System Patterns
 
-## Testing Architecture
+## Development Environment
 
-### Integration-First Testing
-The project follows an integration-first testing approach, focusing on end-to-end functionality and MCP contract compliance rather than unit testing individual components.
+### Package Management with uv
 
-```mermaid
-graph TD
-    A[Integration Tests] --> B[MCP Contract]
-    A --> C[Package Build]
-    A --> D[Storage]
-    
-    B --> E[Tool Registration]
-    B --> F[Resource Access]
-    B --> G[Knowledge Operations]
-    
-    C --> H[Installation]
-    C --> I[Dependencies]
-    C --> J[Server Startup]
-    
-    D --> K[Persistence]
-    D --> L[Data Format]
-    D --> M[Clean Environment]
+1. Environment Setup
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create new environment
+uv venv
+source .venv/bin/activate
+
+# Install dependencies
+uv pip install -e ".[dev]"
 ```
 
-### Test Organization
+2. Dependency Management
+   - Use pyproject.toml for dependencies
+   - Lock file for reproducibility
+   - Fast parallel installations
+   - Efficient dependency resolution
+
+3. Development Workflow
+   - Clean environments with uv venv
+   - Direct dependency installation
+   - Quick environment recreation
+   - Consistent builds
+
+### Testing Architecture
 
 1. Integration Tests
+   ```python
+   @pytest.fixture(autouse=True)
+   async def clean_storage():
+       """Clean up test storage before and after each test."""
+       if TEST_STORAGE_DIR.exists():
+           shutil.rmtree(TEST_STORAGE_DIR)
+       yield
+       if TEST_STORAGE_DIR.exists():
+           shutil.rmtree(TEST_STORAGE_DIR)
+   ```
+
+2. Test Organization
    ```
    tests/
    ├── fixtures.py           # Shared test data and helpers
@@ -35,136 +52,150 @@ graph TD
        └── test_package_build.py   # Installation verification
    ```
 
-2. Test Fixtures
-   ```python
-   # Common test data
-   TEST_KNOWLEDGE = {
-       "path": str,
-       "content": str,
-       "metadata": dict
-   }
+### Storage Architecture
 
-   # Helper functions
-   def assert_tool_response(...)
-   def assert_resource_content(...)
-   def assert_storage_exists(...)
-   def add_test_knowledge(...)
+1. Persistent Storage
+   ```python
+   class PersistentVectorStore(VectorStore):
+       """Persistent vector store using atomic file operations."""
+       
+       def __init__(self, storage_dir: Path):
+           self.storage_dir = Path(storage_dir)
+           self.storage_dir.mkdir(parents=True, exist_ok=True)
+           self._load_or_init_storage()
    ```
 
-3. Environment Management
-   ```python
-   @pytest.fixture(autouse=True)
-   async def clean_storage():
-       # Clean before test
-       if TEST_STORAGE_DIR.exists():
-           shutil.rmtree(TEST_STORAGE_DIR)
-       
-       yield
-       
-       # Clean after test
-       if TEST_STORAGE_DIR.exists():
-           shutil.rmtree(TEST_STORAGE_DIR)
+2. File Structure
+   ```
+   knowledge_store/
+   ├── embeddings.npy     # Vector embeddings
+   └── segments.json      # Knowledge entries and metadata
    ```
 
-### Test Patterns
+### MCP Server Architecture
 
-1. MCP Contract Testing
-   - Tool registration verification
-   - Resource access patterns
-   - Error handling
-   - Response format validation
+1. Tool Handlers
+   ```python
+   class ToolHandler:
+       """Base class for MCP tool handlers."""
+       
+       def __init__(self, embedder, vector_store):
+           self.embedder = embedder
+           self.vector_store = vector_store
+       
+       @classmethod
+       def get_tool_definition(cls) -> types.Tool:
+           raise NotImplementedError
+   ```
 
-2. Package Verification
-   - Clean installation
-   - Dependency resolution
-   - Server initialization
-   - Basic functionality
+2. Server Implementation
+   ```python
+   async def serve(storage_dir: Optional[Path] = None) -> Server:
+       """Create and configure the MCP server."""
+       server = Server(APP_NAME)
+       embedder = OllamaEmbedder(base_url="http://localhost:11434")
+       vector_store = PersistentVectorStore(
+           storage_dir=storage_dir or Path("knowledge_store")
+       )
+   ```
 
-3. Storage Testing
-   - Data persistence
-   - File format verification
+## Implementation Guidelines
+
+### 1. Error Handling
+- Use proper error types
+- Include error context
+- Return descriptive messages
+- Handle async errors
+
+### 2. Response Formatting
+```python
+# Success response
+[types.TextContent(
+    type="text",
+    text=json.dumps({
+        "success": True,
+        "data": result
+    })
+)]
+
+# Error response
+[types.TextContent(
+    type="text",
+    text=json.dumps({
+        "error": "Error description",
+        "details": error_details
+    })
+)]
+```
+
+### 3. Storage Management
+```python
+def _save_storage(self) -> None:
+    """Save storage to files atomically."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        # Save files to temp directory
+        # Move files atomically
+```
+
+### 4. Testing Support
+```python
+@pytest.fixture
+async def server() -> AsyncIterator[Server]:
+    """Create and yield a test server instance."""
+    server = await serve(storage_dir=TEST_STORAGE_DIR)
+    yield server
+    await server.close()
+```
+
+## Best Practices
+
+1. Development
+   - Use uv for environments
+   - Keep dependencies minimal
+   - Use lock files
+   - Fast clean builds
+
+2. Testing
    - Clean environment
-   - Concurrent access
-
-### Best Practices
-
-1. Test Independence
-   - Clean environment between tests
-   - No shared state
-   - Isolated storage
-   - Independent test cases
-
-2. Helper Functions
-   - Common assertions
-   - Test data management
-   - Environment setup
-   - Error validation
-
-3. Test Organization
-   - Clear test names
-   - Focused test cases
-   - Shared fixtures
-   - Minimal duplication
-
-4. Error Handling
-   - Expected errors
-   - Invalid operations
+   - Proper fixtures
+   - Error scenarios
    - Resource cleanup
-   - Clear error messages
 
-### Implementation Requirements
+3. Storage
+   - Atomic operations
+   - Data validation
+   - Error recovery
+   - Proper cleanup
 
-1. Test Environment
-   ```python
-   # Storage directory
-   TEST_STORAGE_DIR = Path("test_knowledge_store")
-   
-   # Server configuration
-   embedder = OllamaEmbedder(base_url="http://localhost:11434")
-   vector_store = PersistentVectorStore(storage_dir=TEST_STORAGE_DIR)
-   ```
+4. MCP Server
+   - Clear tool definitions
+   - Proper error handling
+   - Resource management
+   - Consistent responses
 
-2. Test Data
-   ```python
-   # Knowledge entries
-   {
-       "path": "memory-bank/example.md",
-       "content": "# Example Content...",
-       "metadata": {
-           "type": "memory_bank",
-           "category": "example"
-       }
-   }
-   ```
+## Benefits
 
-3. Assertions
-   ```python
-   # Response validation
-   assert_tool_response(result, expected_data)
-   
-   # Content verification
-   assert_resource_content(content, expected_content, expected_metadata)
-   
-   # Storage checks
-   assert_storage_exists()
-   ```
+1. Development
+   - Fast dependency resolution
+   - Clean environments
+   - Reproducible builds
+   - Modern tooling
 
-### Benefits
-
-1. Quality Assurance
-   - End-to-end verification
-   - Contract compliance
-   - Installation validation
-   - Error detection
-
-2. Maintenance
-   - Clear test structure
-   - Easy to update
-   - Minimal dependencies
-   - Focused testing
-
-3. Development
-   - Fast feedback
-   - Clear expectations
+2. Testing
+   - Reliable tests
+   - Clean state
+   - Clear failures
    - Easy debugging
-   - Reliable results
+
+3. Storage
+   - Data integrity
+   - Error recovery
+   - Clean operations
+   - Safe updates
+
+4. MCP Server
+   - Clear interface
+   - Proper handling
+   - Safe operations
+   - Good documentation

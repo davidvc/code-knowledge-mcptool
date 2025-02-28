@@ -1,19 +1,19 @@
 [build-system]
-requires = ["hatchling", "setuptools>=61.0"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "code-knowledge-tool"
+name = "code-knowledge-store"
 version = "0.1.0"
 description = "Knowledge management tool for code repositories using vector embeddings"
-requires-python = ">=3.8,<3.12"  # PyTorch currently supports up to Python 3.11
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
 dependencies = [
     "chromadb",
     "httpx",
+    "numpy<2.0.0",  # Ensure compatibility
     "pydantic>=2.0.0",
-    "typing-extensions",
-    "numpy<2.0.0",  # Downgrade to ensure compatibility with existing modules
-    "mcp>=0.1.0"  # MCP SDK
+    "pytest-asyncio"  # Required for async tests
 ]
 
 [project.optional-dependencies]
@@ -24,27 +24,14 @@ dev = [
     "mypy",
     "ruff",
     "pytest-asyncio"  # For async test support
+    "pytest-cov"
 ]
 ollama = [
     "httpx>=0.24.0"  # For Ollama API support
 ]
 
+[project.scripts]
+code-knowledge-store = "code_knowledge_store:main"
+
 [tool.hatch.build.targets.wheel]
-packages = ["src/code_knowledge_tool"]
-
-[tool.pytest.ini_options]
-addopts = "-ra -q"
-testpaths = [
-    "tests"
-]
-
-[tool.mypy]
-python_version = "3.8"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-check_untyped_defs = true
-
-[tool.black]
-line-length = 88
-target-version = ['py38']
+packages = ["src/code_knowledge_store"]
